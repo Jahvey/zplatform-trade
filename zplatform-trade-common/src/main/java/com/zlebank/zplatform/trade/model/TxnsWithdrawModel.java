@@ -110,7 +110,7 @@ public class TxnsWithdrawModel implements java.io.Serializable {
         this.amount =Long.valueOf(withdrawBean.getAmount());
         this.acctno = withdrawAccBean.getAccNo();
         this.acctname = withdrawAccBean.getAccName();
-        this.bankcode = withdrawAccBean.getBankCode();
+        //this.bankcode = withdrawAccBean.getBankCode();//个人提现中无法获取到人行联行号
         this.bankname = withdrawAccBean.getBankName();
         this.txntime = DateUtil.getCurrentDateTime();
         this.status = "01";
