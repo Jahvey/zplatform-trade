@@ -32,6 +32,8 @@ package com.zlebank.zplatform.trade.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 
+import net.sf.json.JSONObject;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +112,7 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
     @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
     public void update(UpdateData data) {
     	log.info("代付账务处理开始，交易序列号:"+data.getTxnSeqNo());
+    	log.info("Parameter:"+JSONObject.fromObject(data).toString());
         List<UpdateSubject> observerList = ObserverListService.getInstance().getObserverList();
         for (UpdateSubject subject : observerList) {
         	log.info(subject.getBusiCode());
@@ -202,13 +205,16 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
 	        txnsLogService.update(txnsLog);
     	}
         try {
+        	log.info("开始判断是否处理完毕");
 			// 如果批次已经全部处理完毕，则添加到通知
 			if (insteadPayDetailDAO.isBatchProcessFinished(detail.getInsteadPayBatch().getId())) {
+				log.info("处理完毕");
 			    notifyInsteadURLService.addInsteadPayTask(detail.getInsteadPayBatch().getId());
 			    PojoInsteadPayBatch batch = insteadPayBatchDAO.getByBatchId(detail.getInsteadPayBatch().getId());
 			    batch.setStatus(InsteadPayBatchStatusEnum.ALL_FINISH.getCode());
 			    insteadPayBatchDAO.merge(batch);
 			}
+			log.info("结束判断是否处理完毕");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -318,5 +318,6 @@
 		<module>../zplatform-trade-bosspay</module>
 		<module>../zplatfrom-trade-chanpay</module>
 		<module>../zplatfrom-trade-wechat</module>
+		<!-- <module>../zplatform-trade-zlpay</module> -->
 	</modules>
 </project>

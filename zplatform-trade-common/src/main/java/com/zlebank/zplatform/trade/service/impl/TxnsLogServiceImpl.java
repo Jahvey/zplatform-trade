@@ -788,7 +788,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     
     @Override
     public List<?>  getAllMemberDetailedByDate(String memberId,String date){
-    	String queryString = "select t.ACCORDNO,t.TXNSEQNO,t.ACCORDCOMMITIME,t.ACCSETTLEDATE,t.amount,t.busicode,t.TXNFEE from t_txns_log t left join t_bnk_txn b on t.payordno=b.payordno where (b.status=9 or b.status is null) and t.accsecmerno=? and t.ACCSETTLEDATE=? and t.payordno is not null and SUBSTR (trim(t.retcode), -2) = '00'  and t.busicode in ('10000001','10000002','40000001')";
+    	String queryString = "select t.ACCORDNO,t.TXNSEQNO,t.ACCORDCOMMITIME,t.ACCSETTLEDATE,t.amount,t.busicode,t.TXNFEE, t.TXNSEQNO_OG from t_txns_log t left join t_bnk_txn b on t.payordno=b.payordno where (b.status=9 or b.status is null) and t.accsecmerno=? and t.ACCSETTLEDATE=? and t.payordno is not null and SUBSTR (trim(t.retcode), -2) = '00'  and t.busicode in ('10000001','10000002','40000001','40000002')";
         return (List<?>) super.queryBySQL(queryString, new Object[]{memberId,date});
     }
 
@@ -799,7 +799,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
                 + " sum(t.amount) totalAmount,"
                 + " sum(t.txnfee) totalfee" + " from t_txns_log t"
                 + " where t.ACCSECMERNO = ?" + " and t.ACCSETTLEDATE = ?"
-                + " and t.busicode in (40000001)"
+                + " and t.busicode in (40000001，40000002)"
                 + " and SUBSTR(trim(t.retcode), -2) = '00'";
         return (List<?>) super.queryBySQL(queryString, new Object[]{memberId,
                 date});

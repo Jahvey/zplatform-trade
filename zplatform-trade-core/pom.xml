@@ -63,5 +63,10 @@
 			<version>2.5</version>
 			<scope>provided</scope> 
 		</dependency>
+		<!-- <dependency>
+			<groupId>com.zlebank.zplatform</groupId>
+			<artifactId>zplatform-trade-zlpay</artifactId>
+			<version>1.3.0-SNAPSHOT</version>
+		</dependency> -->
 	</dependencies>
 </project>

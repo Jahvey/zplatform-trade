@@ -111,11 +111,10 @@ public class AccountPayServiceImpl implements IAccountPayService{
         }
     }
     
-    public void webAccountPay(AccountTradeBean accountTrade) throws TradeException{
+    public void mobileAccountPay(AccountTradeBean accountTrade) throws TradeException{
         if(validateBalance(accountTrade.getMemberId(),Long.valueOf(accountTrade.getAmount()))<0){
             throw new TradeException("T025");
         }
-        if(validatePayPWD(accountTrade)){
         //记录账户支付流水
         txnsLogService.saveAccountTrade(accountTrade);
         try {
@@ -138,9 +137,6 @@ public class AccountPayServiceImpl implements IAccountPayService{
             // TODO Auto-generated catch block
             e.printStackTrace();
             throw new TradeException("AP05");
-        }
-        }else{
-            throw new TradeException("AP04");
         }
     }
     

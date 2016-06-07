@@ -24,5 +24,5 @@ import com.zlebank.zplatform.trade.exception.TradeException;
 public interface IAccountPayService{
     public void accountPay(AccountTradeBean accountTrade) throws TradeException;
     public String encryptPWD(String merchId,String pwd) throws TradeException;
-    public void webAccountPay(AccountTradeBean accountTrade) throws TradeException;
+    public void mobileAccountPay(AccountTradeBean accountTrade) throws TradeException;
 }

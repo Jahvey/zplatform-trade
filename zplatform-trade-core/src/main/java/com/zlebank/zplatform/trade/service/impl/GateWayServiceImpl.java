@@ -2365,7 +2365,7 @@ public class GateWayServiceImpl extends
 					acctPayBean.getPaypassWd(), acctPayBean.getTxnAmt(),
 					txnsLog.getTxnseqno());
 			updateOrderToStartPay(orderinfo.getRelatetradetxn());
-			accountPayService.accountPay(accountTrade);
+			accountPayService.mobileAccountPay(accountTrade);
 			resultBean = new ResultBean("success");
 		} catch (TradeException te) {
 			te.printStackTrace();
