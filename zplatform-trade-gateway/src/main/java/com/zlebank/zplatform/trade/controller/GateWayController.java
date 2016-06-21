@@ -360,7 +360,7 @@ public class GateWayController {
 
             if (!"999999999999999".equals(txnsLog.getAccmemberid())) {
                 // 获取会员已绑定的银行卡
-                PagedResult<QuickpayCustBean> bindCardList =  memberBankCardService.queryMemberBankCard(txnsLog.getAccmemberid(), "0",null, 0, 10);
+                 PagedResult<QuickpayCustBean> bindCardList =  memberBankCardService.queryMemberBankCard(txnsLog.getAccmemberid(), "0",null, 0, 10);
                 model.put("bindCardList", bindCardList.getPagedResult());
                 //QuickpayCustBean quickpayCust = null;
                 // 处理银行卡验证信息及身份信息，取得卡信息

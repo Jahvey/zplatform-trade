@@ -37,7 +37,7 @@ import com.zlebank.zplatform.trade.service.MerchWhiteListService;
  * @date 2015年11月17日 下午2:04:49
  * @since 
  */
-@Service
+@Service("merchWhiteListService")
 public class MerchWhiteListServiceImpl implements MerchWhiteListService{
 
     private static final Log log = LogFactory.getLog(MerchWhiteListServiceImpl.class);

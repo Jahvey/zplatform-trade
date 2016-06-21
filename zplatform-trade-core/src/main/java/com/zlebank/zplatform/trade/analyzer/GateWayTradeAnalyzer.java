@@ -52,6 +52,8 @@ public class GateWayTradeAnalyzer {
     public static byte[] generateOrderParamer(OrderBean order) throws Exception {
         String[] unParamstring = {"signature"};
         String msg = ObjectDynamic.generateParamer(order, false, unParamstring);
+        
+        System.out.println("msg=====\n"+msg);
         return URLEncoder.encode(msg,"utf-8").getBytes();
     }
     public static byte[] generateOrderParamer(QueryBean queryBean) throws Exception {
