@@ -126,8 +126,8 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 	@Override
 	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
 	public String createEnterpriseRealNameOrder(EnterpriseRealNameBean enterpriseRealNameBean) throws Exception {
-		
-		checkRealNameBean(enterpriseRealNameBean);
+		EnterpriseBean enterpriseBean = enterpriseService.getEnterpriseByMemberId(enterpriseRealNameBean.getMemberId());
+		checkRealNameBean(enterpriseRealNameBean,enterpriseBean);
 		//创建交易流水
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//由于企业会员 没有扣率，风控，路由版本，所以使用合作机构的
@@ -199,7 +199,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		return orderinfo.getTn();
 	}
 	
-	private void checkRealNameBean(EnterpriseRealNameBean enterpriseRealNameBean) throws InvalidMemberDataException{
+	private void checkRealNameBean(EnterpriseRealNameBean enterpriseRealNameBean,EnterpriseBean enterpriseBean) throws InvalidMemberDataException{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getAccName())){
 			throw new InvalidMemberDataException("银行账户不能为空");
 		}
@@ -212,44 +212,79 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getChannelType())){
 			throw new InvalidMemberDataException("渠道类型不能为空");
 		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getContact())){
-			throw new InvalidMemberDataException("企业联系人姓名不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getContactsTelNo())){
-			throw new InvalidMemberDataException("企业联系人电话不能为空");
-		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getCoopInsti())){
 			throw new InvalidMemberDataException("合作机构不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorpNo())){
-			throw new InvalidMemberDataException("法人代表身份证号不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorporation())){
-			throw new InvalidMemberDataException("法人姓名不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getEnterpriseName())){
-			throw new InvalidMemberDataException("企业名称不能为空");
 		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getFrontURL())){
 			throw new InvalidMemberDataException("前台通知地址不能为空");
 		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getLicenceNo())){
-			throw new InvalidMemberDataException("工商营业执照号不能为空");
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getContact())){
+			throw new InvalidMemberDataException("企业联系人姓名不能为空");
 		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getMemberId())){
 			throw new InvalidMemberDataException("企业会员ID不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getOrgCode())){
-			throw new InvalidMemberDataException("组织机构代码不能为空");
-		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getTaxNo())){
-			throw new InvalidMemberDataException("企业税务登记号不能为空");
 		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getTxnSubType())){
 			throw new InvalidMemberDataException("交易子类不能为空");
 		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getTxnType())){
 			throw new InvalidMemberDataException("交易类型不能为空");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getContactsTelNo())){
+			throw new InvalidMemberDataException("企业联系人电话不能为空");
+		}
+		if(enterpriseRealNameBean.getContactsTelNo().equals(enterpriseBean.getContPhone())){
+			throw new InvalidMemberDataException("企业联系人电话错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorpNo())){
+			throw new InvalidMemberDataException("法人代表身份证号不能为空");
+		}
+		if(enterpriseRealNameBean.getCorpNo().equals(enterpriseBean.getCorpNo())){
+			throw new InvalidMemberDataException("法人代表身份证号错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorporation())){
+			throw new InvalidMemberDataException("法人姓名不能为空");
+		}
+		if(enterpriseRealNameBean.getCorporation().equals(enterpriseBean.getCorporation())){
+			throw new InvalidMemberDataException("法人姓名错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getEnterpriseName())){
+			throw new InvalidMemberDataException("企业名称不能为空");
+		}
+		if(enterpriseRealNameBean.getEnterpriseName().equals(enterpriseBean.getEnterpriseName())){
+			throw new InvalidMemberDataException("企业名称错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getLicenceNo())){
+			throw new InvalidMemberDataException("工商营业执照号不能为空");
+		}
+		if(enterpriseRealNameBean.getLicenceNo().equals(enterpriseBean.getLicenceNo())){
+			throw new InvalidMemberDataException("工商营业执照号错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getOrgCode())){
+			throw new InvalidMemberDataException("组织机构代码不能为空");
+		}
+		if(enterpriseRealNameBean.getOrgCode().equals(enterpriseBean.getOrgCode())){
+			throw new InvalidMemberDataException("组织机构代码错误");
+		}
+		
+		
+		if(StringUtil.isEmpty(enterpriseRealNameBean.getTaxNo())){
+			throw new InvalidMemberDataException("企业税务登记号不能为空");
+		}
+		if(enterpriseRealNameBean.getTaxNo().equals(enterpriseBean.getTaxNo())){
+			throw new InvalidMemberDataException("企业税务登记号错误");
 		}
 		
 	}

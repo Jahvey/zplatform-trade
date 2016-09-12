@@ -32,6 +32,20 @@
 	
 	<context:component-scan base-package="com.zlebank.zplatform"></context:component-scan>
 	<bean id="springContext" class="com.zlebank.zplatform.trade.utils.SpringContext"></bean>
+	
+	<bean id="logHelper" class="com.zlebank.zplatform.trade.logutil.LogHelper"/>
+	<aop:config>
+	    <aop:aspect ref="logHelper">
+	        <aop:pointcut id="pointcut" expression="execution(* com.zlebank.zplatform..*.*(..))"/>
+	        <aop:before method="before"  pointcut-ref="pointcut" />
+	        <aop:after method="after" pointcut-ref="pointcut" />
+	        <aop:around method="around"  pointcut-ref="pointcut" />
+	        <aop:after-throwing method="throwException" pointcut-ref="pointcut" throwing="ex" />
+	    </aop:aspect>
+	</aop:config>
+
+
+
 
 	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
 		<property name="triggers">
