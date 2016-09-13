@@ -43,7 +43,11 @@ public class CardBinServiceImpl implements CardBinService{
 	@Transactional(readOnly=true)
 	public CardBinBean getCard(String cardNo) {
 		// TODO Auto-generated method stub
-		return BeanCopyUtil.copyBean(CardBinBean.class, cardBinDao.getCard(cardNo));
+		CardBin cardBin = cardBinDao.getCard(cardNo);
+		if(cardBin!=null){
+			return BeanCopyUtil.copyBean(CardBinBean.class, cardBin);
+		}
+		return null;
 	}
 	
 	

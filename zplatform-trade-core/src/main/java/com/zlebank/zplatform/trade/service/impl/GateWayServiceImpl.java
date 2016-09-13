@@ -2103,7 +2103,6 @@ public class GateWayServiceImpl extends
 	 * @return 返回绑卡标示，数据库中的主键标示
 	 * @throws TradeException
 	 */
-	@Transactional
 	public String bankCardSign(String json) throws TradeException {
 		if (log.isDebugEnabled()) {
 			log.debug("银行卡签约：开始");

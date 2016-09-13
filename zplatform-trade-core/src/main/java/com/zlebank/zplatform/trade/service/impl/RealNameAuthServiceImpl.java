@@ -93,6 +93,7 @@ public class RealNameAuthServiceImpl  implements RealNameAuthService{
      * @throws BalanceNotEnoughException 
      */
     @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
     public boolean realNameAuth(RealnameAuth_Request request, RealnameAuthFile realNameAuth, Long orderId) throws MessageDecryptFailException, RealNameAuthFailException, BalanceNotEnoughException {
         if (log.isDebugEnabled()) {
             log.debug("认证处理开始");
