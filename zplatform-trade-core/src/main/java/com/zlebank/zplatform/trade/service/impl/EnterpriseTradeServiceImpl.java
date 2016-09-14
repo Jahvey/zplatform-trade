@@ -218,9 +218,6 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getFrontURL())){
 			throw new InvalidMemberDataException("前台通知地址不能为空");
 		}
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getContact())){
-			throw new InvalidMemberDataException("企业联系人姓名不能为空");
-		}
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getMemberId())){
 			throw new InvalidMemberDataException("企业会员ID不能为空");
 		}
@@ -232,18 +229,21 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		}
 		
 		
-		if(StringUtil.isEmpty(enterpriseRealNameBean.getContactsTelNo())){
+		/*if(StringUtil.isEmpty(enterpriseRealNameBean.getContactsTelNo())){
 			throw new InvalidMemberDataException("企业联系人电话不能为空");
-		}
-		if(enterpriseRealNameBean.getContactsTelNo().equals(enterpriseBean.getContPhone())){
+		}*/
+		if(!enterpriseRealNameBean.getContactsTelNo().equals(enterpriseBean.getContPhone())){
 			throw new InvalidMemberDataException("企业联系人电话错误");
 		}
 		
+		if(!enterpriseRealNameBean.getContact().equals(enterpriseBean.getContact())){
+			throw new InvalidMemberDataException("企业联系人姓名错误");
+		}
 		
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorpNo())){
 			throw new InvalidMemberDataException("法人代表身份证号不能为空");
 		}
-		if(enterpriseRealNameBean.getCorpNo().equals(enterpriseBean.getCorpNo())){
+		if(!enterpriseRealNameBean.getCorpNo().equals(enterpriseBean.getCorpNo())){
 			throw new InvalidMemberDataException("法人代表身份证号错误");
 		}
 		
@@ -251,7 +251,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getCorporation())){
 			throw new InvalidMemberDataException("法人姓名不能为空");
 		}
-		if(enterpriseRealNameBean.getCorporation().equals(enterpriseBean.getCorporation())){
+		if(!enterpriseRealNameBean.getCorporation().equals(enterpriseBean.getCorporation())){
 			throw new InvalidMemberDataException("法人姓名错误");
 		}
 		
@@ -259,7 +259,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getEnterpriseName())){
 			throw new InvalidMemberDataException("企业名称不能为空");
 		}
-		if(enterpriseRealNameBean.getEnterpriseName().equals(enterpriseBean.getEnterpriseName())){
+		if(!enterpriseRealNameBean.getEnterpriseName().equals(enterpriseBean.getEnterpriseName())){
 			throw new InvalidMemberDataException("企业名称错误");
 		}
 		
@@ -267,7 +267,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getLicenceNo())){
 			throw new InvalidMemberDataException("工商营业执照号不能为空");
 		}
-		if(enterpriseRealNameBean.getLicenceNo().equals(enterpriseBean.getLicenceNo())){
+		if(!enterpriseRealNameBean.getLicenceNo().equals(enterpriseBean.getLicenceNo())){
 			throw new InvalidMemberDataException("工商营业执照号错误");
 		}
 		
@@ -275,7 +275,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getOrgCode())){
 			throw new InvalidMemberDataException("组织机构代码不能为空");
 		}
-		if(enterpriseRealNameBean.getOrgCode().equals(enterpriseBean.getOrgCode())){
+		if(!enterpriseRealNameBean.getOrgCode().equals(enterpriseBean.getOrgCode())){
 			throw new InvalidMemberDataException("组织机构代码错误");
 		}
 		
@@ -283,7 +283,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(StringUtil.isEmpty(enterpriseRealNameBean.getTaxNo())){
 			throw new InvalidMemberDataException("企业税务登记号不能为空");
 		}
-		if(enterpriseRealNameBean.getTaxNo().equals(enterpriseBean.getTaxNo())){
+		if(!enterpriseRealNameBean.getTaxNo().equals(enterpriseBean.getTaxNo())){
 			throw new InvalidMemberDataException("企业税务登记号错误");
 		}
 		

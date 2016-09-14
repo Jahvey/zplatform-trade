@@ -861,15 +861,12 @@ public class GateWayServiceImpl extends
 	 * @throws TradeException
 	 */
 	public String dealWithWapOrder(OrderBean order) throws TradeException {
-		List<TxnsOrderinfoModel> orderinfoList = (List<TxnsOrderinfoModel>) super
-				.queryByHQL(
-						"from TxnsOrderinfoModel where orderno = ? and ordercommitime = ? ",
-						new Object[] { order.getOrderId(), order.getTxnTime() });
-		if (orderinfoList.size() == 1) {
-			return orderinfoList.get(0).getTn();
+		TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderinfoByOrderNoAndMemberId(order.getOrderId(), order.getMerId());
+		if (orderinfo!=null) {
+			return orderinfo.getTn();
 		}
 		// 记录订单信息
-		TxnsOrderinfoModel orderinfo;
+		//TxnsOrderinfoModel orderinfo;
 		try {
 			TxncodeDefModel busiModel = txncodeDefService.getBusiCode(
 					order.getTxnType(), order.getTxnSubType(),

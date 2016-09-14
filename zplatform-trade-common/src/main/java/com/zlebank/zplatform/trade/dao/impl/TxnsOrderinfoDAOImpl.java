@@ -34,7 +34,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         // TODO Auto-generated method stub
         return super.getSession();
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED)
     public void updateOrderToFail(String orderNo,String merchId) {
         TxnsOrderinfoModel orderinfo = getOrderinfoByOrderNo(orderNo,merchId);
         if("02".equals(orderinfo.getStatus())){
@@ -83,7 +83,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         return (TxnsOrderinfoModel) query.list().get(0);
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED)
     public TxnsOrderinfoModel getOrderinfoByOrderNoAndMemberId(String orderNo,String merchId) {
         String hql = "from TxnsOrderinfoModel where orderno = ? and secmemberno = ? ";
         Session session = getSession();
@@ -92,7 +92,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         query.setString(1, merchId);
         return (TxnsOrderinfoModel) query.list().get(0);
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED)
     public void updateOrderinfo(TxnsOrderinfoModel orderinfo){
         getSession().update(orderinfo);
     }
