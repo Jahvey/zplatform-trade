@@ -24,6 +24,8 @@ public enum BusinessEnum {
     CONSUMEACCOUNT("10000002"),//消费-账户
     CONSUMESPLIT("10000004"),//消费-分账
     RECHARGE("20000001"),//充值
+    BAIL_RECHARGE("20000002"),//保证金线上充值
+    BAIL_RECHARGE_OFFLINE("20000003"),//保证金线下充值
     WITHDRAWALS("30000001"),//提现
     REFUND_BANK("40000001"),//退款-银行卡
     INSTEADPAY("70000001"),//代付
@@ -38,6 +40,10 @@ public enum BusinessEnum {
     
     CONSUMEQUICK_PRODUCT("11000001"),//产品-消费-快捷
     CONSUMEACCOUNT_PRODUCT("11000002"),//产品-消费-账户
+    
+    TRANSFER("50000001"),//转账
+    BAIL_WITHDRAWALS("50000002"),//保证金线提取
+    
     UNKNOW("");//未知
     private String busiCode;
     
