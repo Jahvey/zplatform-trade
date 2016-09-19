@@ -290,6 +290,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	}
 	
 	@Override
+	@Transactional
 	public String bailAccountRecharge(BailRechargeOrderBean order) throws TradeException {
 		log.info("保证金充值处理开始");
         log.info(JSONObject.fromObject(order));
@@ -480,6 +481,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	
 
 	@Override
+	@Transactional
 	public String bailAccountWithdraw(BailWithdrawOrderBean order) throws TradeException {
 		log.info("保证金提取处理开始");
         log.info(JSONObject.fromObject(order));
