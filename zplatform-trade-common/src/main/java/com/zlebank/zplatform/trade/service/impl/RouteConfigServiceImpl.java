@@ -124,16 +124,15 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
             
             sqlBuffer.append("AND t.isdef = '1' ");
             if (StringUtils.isNotEmpty(bankcode)) {
-                sqlBuffer.append("AND t.bankcode like ? ");
+                sqlBuffer.append("AND (t.bankcode like ? or t.bankcode is null) ");
                 paramList.add("%"+bankcode + ";%");
             }
             if (StringUtils.isNotEmpty(busiCode)) {
-                sqlBuffer.append("AND t.busicode like ? ");
-                
+                sqlBuffer.append("AND  (t.busicode like ? or t.busicode is null) ");
                 paramList.add("%"+busiCode + ";%");
             }
             if (StringUtils.isNotEmpty(cardType)) {
-                sqlBuffer.append("AND t.cardtype like ? ");
+                sqlBuffer.append("AND (t.cardtype like ? or t.cardtype is null) ");
                 paramList.add("%"+cardType + ";%");
             }
             sqlBuffer
@@ -277,7 +276,7 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
             sqlBuffer.append("AND t.maxamt >= ? ");
             paramList.add(transAmt);
             sqlBuffer.append("AND t.isdef = '1' ");
-            if (StringUtils.isNotEmpty(bankcode)) {
+            /*if (StringUtils.isNotEmpty(bankcode)) {
                 sqlBuffer.append("AND t.bankcode like ? ");
                 paramList.add("%"+bankcode + ";%");
             }
@@ -288,6 +287,18 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
             }
             if (StringUtils.isNotEmpty(cardType)) {
                 sqlBuffer.append("AND t.cardtype like ? ");
+                paramList.add("%"+cardType + ";%");
+            }*/
+            if (StringUtils.isNotEmpty(bankcode)) {
+                sqlBuffer.append("AND (t.bankcode like ? or t.bankcode is null) ");
+                paramList.add("%"+bankcode + ";%");
+            }
+            if (StringUtils.isNotEmpty(busiCode)) {
+                sqlBuffer.append("AND  (t.busicode like ? or t.busicode is null) ");
+                paramList.add("%"+busiCode + ";%");
+            }
+            if (StringUtils.isNotEmpty(cardType)) {
+                sqlBuffer.append("AND (t.cardtype like ? or t.cardtype is null) ");
                 paramList.add("%"+cardType + ";%");
             }
             sqlBuffer

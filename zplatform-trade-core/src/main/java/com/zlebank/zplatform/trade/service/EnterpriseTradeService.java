@@ -67,7 +67,7 @@ public interface EnterpriseTradeService {
 	 * @param bean
 	 * @return
 	 */
-	public String raiseMoneyTransfer(RaiseMoneyTransferBean bean);
+	public String raiseMoneyTransfer(RaiseMoneyTransferBean bean) throws TradeException;
 	
 	/**
 	 * 商户还款

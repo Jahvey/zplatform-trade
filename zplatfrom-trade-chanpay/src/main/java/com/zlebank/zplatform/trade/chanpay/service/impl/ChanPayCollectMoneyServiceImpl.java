@@ -12,6 +12,7 @@ package com.zlebank.zplatform.trade.chanpay.service.impl;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.lang.StringUtils;
@@ -127,9 +128,22 @@ public class ChanPayCollectMoneyServiceImpl implements ChanPayCollectMoneyServic
 				ResultBean queryResultBean = queryRealNameAuth(data.getReqSn());
 				if(queryResultBean.isResultBool()){
 					G60002Bean bean = (G60002Bean) queryResultBean.getResultObj();
+					BodyRetEnmu bodyRetEnmu = null;
+					if(StringUtil.isNotEmpty(bean.getDtlRetCode())){
+						bodyRetEnmu = BodyRetEnmu.fromValue(bean.getDtlRetCode());
+					}else{
+						bodyRetEnmu = BodyRetEnmu.fromValue(bean.getRetCode());
+					}
 					
-					BodyRetEnmu bodyRetEnmu = BodyRetEnmu.fromValue(bean.getDtlRetCode());
 					if(bodyRetEnmu==BodyRetEnmu.ACCEPTED||bodyRetEnmu==BodyRetEnmu.PROCESSING){
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						continue;
+					}else if(bodyRetEnmu==BodyRetEnmu.NOFIND){
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -409,8 +423,21 @@ public class ChanPayCollectMoneyServiceImpl implements ChanPayCollectMoneyServic
 				if(queryResultBean.isResultBool()){
 					G60004Bean bean = (G60004Bean) queryResultBean.getResultObj();
 					
-					BodyRetEnmu bodyRetEnmu = BodyRetEnmu.fromValue(bean.getDtlRetCode());
+					BodyRetEnmu bodyRetEnmu = null;
+					if(StringUtil.isNotEmpty(bean.getDtlRetCode())){
+						bodyRetEnmu = BodyRetEnmu.fromValue(bean.getDtlRetCode());
+					}else{
+						bodyRetEnmu = BodyRetEnmu.fromValue(bean.getRetCode());
+					}
 					if(bodyRetEnmu==BodyRetEnmu.ACCEPTED||bodyRetEnmu==BodyRetEnmu.PROCESSING){
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						continue;
+					}else if(bodyRetEnmu==BodyRetEnmu.NOFIND){
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -719,6 +746,15 @@ public class ChanPayCollectMoneyServiceImpl implements ChanPayCollectMoneyServic
 					G20001Bean bean = (G20001Bean) queryResultBean.getResultObj();
 					BodyRetEnmu bodyRetEnmu = BodyRetEnmu.fromValue(bean.getRetCode());
 					if(bodyRetEnmu==BodyRetEnmu.ACCEPTED||bodyRetEnmu==BodyRetEnmu.PROCESSING){
+						
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						continue;
+					}else if(bodyRetEnmu==BodyRetEnmu.NOFIND){
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -744,9 +780,7 @@ public class ChanPayCollectMoneyServiceImpl implements ChanPayCollectMoneyServic
 						resultBean.setResultBool(false);
 						break;
 					}
-					
 				}
-				
 			}
 		}else{
 			resultBean = new ResultBean("T000","交易失败");

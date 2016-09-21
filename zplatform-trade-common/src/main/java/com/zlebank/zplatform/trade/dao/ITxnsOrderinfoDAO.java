@@ -10,12 +10,10 @@
  */
 package com.zlebank.zplatform.trade.dao;
 
-import java.util.List;
-import java.util.Map;
-
 import org.hibernate.Session;
 
 import com.zlebank.zplatform.commons.dao.BaseDAO;
+import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 
 /**
@@ -38,6 +36,7 @@ public interface ITxnsOrderinfoDAO extends BaseDAO<TxnsOrderinfoModel>{
     public void updateOrderToFail(String txnseqno);
     public void updateOrderToSuccess(String txnseqno) ;
     public void updateOrderToSuccessByTN(String tn) ;
+    public void saveOrderInfo(TxnsOrderinfoModel orderinfo);
     
-    
+    public void updateOrderToPay(String tn)  throws TradeException;
 }

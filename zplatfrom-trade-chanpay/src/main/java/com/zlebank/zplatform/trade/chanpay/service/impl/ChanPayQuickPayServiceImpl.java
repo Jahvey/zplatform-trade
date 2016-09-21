@@ -205,8 +205,18 @@ public class ChanPayQuickPayServiceImpl implements ChanPayQuickPayService {
 			e.printStackTrace();
 			txnsLogService.updateTradeStatFlag(tradeBean.getTxnseqno(), TradeStatFlagEnum.OVERTIME);
 		}
+		if(resultBean==null){
+			resultBean = new ResultBean("T000", "交易超时请稍后查询");
+			log.info("畅捷代收超时,txnseqno:" + tradeBean.getTxnseqno());
+			return resultBean;
+		}
 		G10001Bean data = (G10001Bean) resultBean.getResultObj();
 		log.info("接收畅捷应答数据：" + JSON.toJSONString(data));
+		if(data==null){
+			resultBean = new ResultBean("T000", "交易超时请稍后查询");
+			log.info("畅捷代收超时,txnseqno:" + tradeBean.getTxnseqno());
+			return resultBean;
+		}
 		txnsWithholdingModel.setExeccode(data.getRetCode());
 		txnsWithholdingModel.setExecmsg(data.getErrMsg());
 		txnsWithholdingService.updateRealNameResult(txnsWithholdingModel);

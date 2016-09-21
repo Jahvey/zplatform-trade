@@ -10,14 +10,17 @@
  */
 package com.zlebank.zplatform.trade.dao.impl;
 
+import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.commons.dao.impl.HibernateBaseDAOImpl;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
+import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 
 /**
@@ -30,6 +33,7 @@ import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
  */
 @Repository("txnsOrderinfo")
 public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoModel> implements ITxnsOrderinfoDAO{
+	
     public Session getSession() {
         // TODO Auto-generated method stub
         return super.getSession();
@@ -90,7 +94,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         Query query = session.createQuery(hql);
         query.setString(0, orderNo);
         query.setString(1, merchId);
-        return (TxnsOrderinfoModel) query.list().get(0);
+        return (TxnsOrderinfoModel) query.uniqueResult();
     }
     @Transactional(propagation=Propagation.REQUIRED)
     public void updateOrderinfo(TxnsOrderinfoModel orderinfo){
@@ -108,7 +112,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         Session session = getSession();
         Query query = session.createQuery(hql);
         query.setString(0, tn);
-        return (TxnsOrderinfoModel) query.list().get(0);
+        return (TxnsOrderinfoModel) query.uniqueResult();
 	}
 	/**
 	 *
@@ -138,5 +142,40 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
         query.setString(0, "00");
         query.setString(1, tn);
         int rows =  query.executeUpdate();
+	}
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void saveOrderInfo(TxnsOrderinfoModel orderinfo){
+		saveA(orderinfo);
+	}
+	/**
+	 *
+	 * @param tn
+	 * @throws TradeException 
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateOrderToPay(String txnseqno) throws TradeException {
+		// TODO Auto-generated method stub
+		Session session = getSession();
+		Query query = session.createQuery("from TxnsOrderinfoModel where relatetradetxn=? and (status=? or status = ?)");
+		query.setString(0, txnseqno);
+		query.setString(1, "01");
+		query.setString(2, "03" );
+		TxnsOrderinfoModel orderinfo = (TxnsOrderinfoModel) query.uniqueResult();
+		if (orderinfo == null) {
+			throw new TradeException("T010");
+		}
+		query = null;
+		String hql = "update TxnsOrderinfoModel set status = ? where relatetradetxn=? and (status=? or status = ?) ";
+        query = session.createQuery(hql);
+        query.setString(0, "02");
+        query.setString(1, txnseqno);
+        query.setString(2, "01");
+        query.setString(3, "03");
+        int rows = query.executeUpdate();
+        if (rows != 1) {
+			throw new TradeException("T011");
+		}
 	}
 }

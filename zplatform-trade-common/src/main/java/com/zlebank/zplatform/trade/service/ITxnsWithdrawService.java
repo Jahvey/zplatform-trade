@@ -33,5 +33,11 @@ public interface ITxnsWithdrawService extends IBaseService<TxnsWithdrawModel, Lo
      */
     public void updateWithdrawResult(TxnsWithdrawModel withdraw);
     
+    /**
+     * 保存提现申请
+     * @param withdraw
+     */
+    public void saveWithdrawApply(TxnsWithdrawModel withdraw);
+    
    
 }

@@ -98,7 +98,7 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
         BusiTypeEnum busiTypeEnum = BusiTypeEnum.fromValue(busiModel.getBusitype());
         if(busiTypeEnum==BusiTypeEnum.consumption){//消费
         	BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
-        	if(StringUtil.isNotEmpty(order.getMerId())){
+        	if(StringUtil.isEmpty(order.getMerId())){
         		 //throw new CommonException("GW26", "商户号为空");
         		 resultBean = new ResultBean("GW26", "商户号为空");
         	}
@@ -124,14 +124,17 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
 					resultBean = new ResultBean("T000", "产品不存在");
 				}
             }
+            resultBean = new ResultBean("success");
         }else if(busiTypeEnum==BusiTypeEnum.charge){//充值
         	/*if (StringUtil.isEmpty(order.getMemberId()) || "999999999999999".equals(order.getMemberId())) {
 				throw new CommonException("GW19", "会员不存在无法进行充值");
 			}*/
+        	resultBean = new ResultBean("success");
         }else if(busiTypeEnum==BusiTypeEnum.withdrawal){//提现
         	/*if (StringUtil.isEmpty(orderBean.getMemberId()) || "999999999999999".equals(orderBean.getMemberId())) {
 				throw new CommonException("GW19", "会员不存在无法进行充值");
 			}*/
+        	resultBean = new ResultBean("success");
         }
         return resultBean;
     }

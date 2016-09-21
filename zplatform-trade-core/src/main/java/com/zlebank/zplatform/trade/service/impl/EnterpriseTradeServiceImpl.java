@@ -22,10 +22,12 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.alibaba.fastjson.JSON;
+import com.zlebank.zplatform.acc.bean.FinanceProductBean;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.bean.enums.TradeType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.acc.service.AccEntryService;
+import com.zlebank.zplatform.acc.service.FinanceProductService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.commons.utils.StringUtil;
@@ -115,6 +117,8 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 	private MerchService merchService;
 	@Autowired
 	private FinanceProductAccountService financeProductAccountService;
+	@Autowired
+	private FinanceProductService financeProductService;
 	@Autowired
 	private EnterpriseRealnameApplyService enterpriseRealnameApplyService;
 	
@@ -367,6 +371,14 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		if(member_check==null){
 			throw new TradeException("T000","【"+bean.getMemberId()+"】会员不存在");
 		}
+		//检查当前产品是否为当前融资人的产品
+		FinanceProductBean productBean = financeProductService.getProductByCode(bean.getProductCode());
+		if(productBean==null){
+			throw new TradeException("T000","无法找到["+bean.getProductCode()+"]金融产品");
+		}
+		if(!productBean.getFinancier().equals(bean.getMemberId())){
+			throw new TradeException("T000","该融资人无权管理此金融产品");
+		}
 		
 		/**
 		 * 1 先写交易订单和交易流水表
@@ -402,7 +414,7 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 		txnsLog.setPayfirmerno(bean.getCoopInsti());
 		txnsLog.setPaysecmerno(bean.getMemberId());
 		txnsLog.setPayordcomtime(DateUtil.getCurrentDateTime());
-		
+		txnsLog.setProductcode(bean.getProductCode());
 		
 		
 		
@@ -511,7 +523,20 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 	}
 	
 	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
-	public String raiseMoneyTransfer(RaiseMoneyTransferBean bean){
+	public String raiseMoneyTransfer(RaiseMoneyTransferBean bean) throws TradeException{
+	
+		//检查当前产品是否为当前融资人的产品
+		FinanceProductBean productBean = financeProductService.getProductByCode(bean.getProductCode());
+		if(productBean==null){
+			throw new TradeException("T000","无法找到["+bean.getProductCode()+"]金融产品");
+		}
+		if(!productBean.getFinancier().equals(bean.getFinancingId())){
+			throw new TradeException("T000","该融资人无权管理此金融产品");
+		}
+		if(!productBean.getFundManager().equals(bean.getFinancingId())){
+			throw new TradeException("T000","该商户无权管理此金融产品");
+		}
+		
 		String txnseqno = OrderNumber.getInstance().generateTxnseqno(TradeType.PRODUCT_CAPITAL_TRANSFER.getCode());
 		TxnsOrderinfoModel orderinfo = new TxnsOrderinfoModel();
 		//保存审核数据
@@ -590,6 +615,13 @@ public class EnterpriseTradeServiceImpl implements EnterpriseTradeService{
 	
 	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
 	public String merchReimbusement(MerchantReimbursementBean bean) throws Exception{
+		FinanceProductBean productBean = financeProductService.getProductByCode(bean.getProductCode());
+		if(productBean==null){
+			throw new TradeException("T000","无法找到["+bean.getProductCode()+"]金融产品");
+		}
+		if(!productBean.getFundManager().equals(bean.getMemberId())){
+			throw new TradeException("T000","该商户无权管理此金融产品");
+		}
 		
 		PojoMerchReimburseBatch merchReimburseBatch = merchReimburseBatchDAO.getBatchInfoByBatchNo(bean.getBatchNo());
 		if(merchReimburseBatch!=null){

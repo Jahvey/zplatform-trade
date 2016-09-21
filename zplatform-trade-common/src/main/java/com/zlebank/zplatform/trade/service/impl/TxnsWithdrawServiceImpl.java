@@ -78,4 +78,18 @@ public class TxnsWithdrawServiceImpl extends BaseServiceImpl<TxnsWithdrawModel, 
         String hql = "update TxnsWithdrawModel set finishtime = ?,status = ?,retcode = ?,retinfo = ? where withdraworderno = ? and memberid = ? ";
         super.updateByHQL(hql, new Object[]{withdraw.getFinishtime(),withdraw.getStatus(),withdraw.getRetcode(),withdraw.getRetinfo(),withdraw.getWithdraworderno(),withdraw.getMemberid()});
     }
+
+	/**
+	 *
+	 * @param withdraw
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void saveWithdrawApply(TxnsWithdrawModel withdraw) {
+		// TODO Auto-generated method stub
+		txnsWithdrawDAO.saveA(withdraw);
+	}
+    
+    
+    
 }

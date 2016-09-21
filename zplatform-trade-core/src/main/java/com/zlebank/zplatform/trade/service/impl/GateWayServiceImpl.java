@@ -37,6 +37,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.zlebank.zplatform.acc.bean.BusiAcct;
 import com.zlebank.zplatform.acc.bean.BusiAcctQuery;
+import com.zlebank.zplatform.acc.bean.FinanceProductBean;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
@@ -45,6 +46,7 @@ import com.zlebank.zplatform.acc.exception.AccBussinessException;
 import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.AccountQueryService;
+import com.zlebank.zplatform.acc.service.FinanceProductService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.bean.PagedResult;
 import com.zlebank.zplatform.commons.dao.BankInfoDAO;
@@ -213,6 +215,8 @@ public class GateWayServiceImpl extends
 	private MemberDAO memberDAO;
 	@Autowired
 	private BankInfoDAO bankInfoDAO;
+	@Autowired
+	private FinanceProductService financeProductService;
 	/**
 	 *
 	 * @return
@@ -709,7 +713,7 @@ public class GateWayServiceImpl extends
 	public void saveOrderInfo(TxnsOrderinfoModel orderinfo)
 			throws TradeException {
 		try {
-			super.save(orderinfo);
+			save(orderinfo);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -873,6 +877,22 @@ public class GateWayServiceImpl extends
 					order.getBizType());
 			RiskRateInfoBean riskRateInfoBean = (RiskRateInfoBean) GateWayTradeAnalyzer
 					.generateRiskBean(order.getRiskRateInfo()).getResultObj();
+			
+			//消费-产品时校验产品是否和商户相关联
+			if(busiModel.getBusicode().equals(BusinessEnum.CONSUMEQUICK_PRODUCT.getBusiCode())){
+				if(StringUtil.isEmpty(order.getProductcode())){
+					throw new TradeException("T000","金融产品代码为空");
+				}
+				FinanceProductBean productBean = financeProductService.getProductByCode(order.getProductcode());
+				if(productBean==null){
+					throw new TradeException("T000","无法找到相关金融产品");
+				}
+				if(!productBean.getFundManager().equals(order.getMerId())){
+					throw new TradeException("T000","该商户无权管理此金融产品");
+				}
+			}
+			
+			
 			// 检查商户和会员的资金账户状态
 			checkBusiAcct(order.getMerId(), riskRateInfoBean.getMerUserId());
 			PojoMerchDeta member = null;
@@ -951,7 +971,7 @@ public class GateWayServiceImpl extends
 			}
 			txnsLog.setTradestatflag(TradeStatFlagEnum.INITIAL.getStatus());
 			txnsLog.setProductcode(order.getProductcode());
-			txnsLogService.save(txnsLog);
+			txnsLogService.saveTxnsLog(txnsLog);
 
 			orderinfo = new TxnsOrderinfoModel();
 			orderinfo.setId(OrderNumber.getInstance().generateID());
@@ -1003,7 +1023,8 @@ public class GateWayServiceImpl extends
 			orderinfo.setMemberid(riskRateInfoBean.getMerUserId());
 			orderinfo.setCurrencycode("156");
 			orderinfo.setProductcode(order.getProductcode());
-			super.save(orderinfo);
+			txnsOrderinfoDAO.saveOrderInfo(orderinfo);
+			
 			return orderinfo.getTn();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -1354,7 +1375,7 @@ public class GateWayServiceImpl extends
 			} else {
 				txnsLog.setAccsecmerno(withdrawBean.getMerId());
 			}
-			txnsLog.setAcccoopinstino(withdrawBean.getCoopInstiId());
+			txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
 			txnsLog.setAccordcommitime(withdrawBean.getTxnTime());
 			txnsLog.setTradestatflag("00000000");// 交易初始状态
 			txnsLog.setAccmemberid(withdrawBean.getMemberId());
@@ -1406,8 +1427,8 @@ public class GateWayServiceImpl extends
 			
 			try {
 				txnsLogService.tradeRiskControl(txnsLog.getTxnseqno(),txnsLog.getAccfirmerno(),txnsLog.getAccsecmerno(),txnsLog.getAccmemberid(),txnsLog.getBusicode(),txnsLog.getAmount()+"","1",withdraw.getAcctno());
-				saveOrderInfo(orderinfo);
-				txnsWithdrawService.saveEntity(withdraw);
+				txnsOrderinfoDAO.saveOrderInfo(orderinfo);
+				txnsWithdrawService.saveWithdrawApply(withdraw);
 				// 提现账务处理
 				TradeInfo tradeInfo = new TradeInfo();
 				tradeInfo.setPayMemberId(txnsLog.getAccmemberid());
@@ -1417,6 +1438,7 @@ public class GateWayServiceImpl extends
 						: txnsLog.getTxnfee()));
 				tradeInfo.setTxnseqno(txnsLog.getTxnseqno());
 				tradeInfo.setBusiCode(BusinessCodeEnum.WITHDRAWALS.getBusiCode());
+				tradeInfo.setAccess_coopInstCode(txnsLog.getAccfirmerno());
 				tradeInfo.setCoopInstCode(txnsLog.getAcccoopinstino());
 				// 记录分录流水
 				accEntryService.accEntryProcess(tradeInfo, EntryEvent.AUDIT_APPLY);
@@ -2233,12 +2255,11 @@ public class GateWayServiceImpl extends
 		// verifyWapOrder(JSON.parseObject(json));
 		WapSMSMessageBean smsMessageBean = JSON.parseObject(json,
 				WapSMSMessageBean.class);
-		TxnsOrderinfoModel orderinfo = getOrderinfoByTN(smsMessageBean.getTn());
+		TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderByTN(smsMessageBean.getTn());
 		if (orderinfo == null) {
 			throw new TradeException("GW15");
 		}
-		TxnsLogModel txnsLog = txnsLogService
-				.get(orderinfo.getRelatetradetxn());
+		TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(orderinfo.getRelatetradetxn());
 		if ("00".equals(orderinfo.getStatus())) {
 			throw new TradeException("T004");
 		}
@@ -2311,7 +2332,7 @@ public class GateWayServiceImpl extends
 	public void submitPay(String json) throws TradeException {
 		WapSubmitPayBean submitPayBean = JSON.parseObject(json,
 				WapSubmitPayBean.class);
-		TxnsOrderinfoModel orderinfo = getOrderinfoByTN(submitPayBean.getTn());// 原始订单信息
+		TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderByTN(submitPayBean.getTn());// 原始订单信息
 		TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(orderinfo
 				.getRelatetradetxn());// 交易流水信息
 		String reapayOrderNo = txnsQuickpayService.getReapayOrderNo(txnsLog
@@ -2382,7 +2403,7 @@ public class GateWayServiceImpl extends
 				txnsLog.getAmount() + "", card.getCardtype(), card.getCardno());
 		//检查资金账户
 		checkBusiAcct(txnsLog.getAccsecmerno(), txnsLog.getAccmemberid());
-		updateOrderToStartPay(orderinfo.getRelatetradetxn());
+		txnsOrderinfoDAO.updateOrderToPay(orderinfo.getRelatetradetxn());
 		txnsLogService.initretMsg(txnsLog.getTxnseqno());
 		quickPayTrade.setTradeBean(trade);
 		quickPayTrade.setTradeType(TradeTypeEnum.SUBMITPAY);
@@ -2634,7 +2655,7 @@ public class GateWayServiceImpl extends
 	 * @return
 	 * @throws TradeException
 	 */
-	@Transactional
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor={Throwable.class,Exception.class})
 	public String withdraw(String json) throws TradeException {
 		WapWithdrawBean withdrawBean = JSON.parseObject(json,
 				WapWithdrawBean.class);

@@ -26,6 +26,7 @@ public enum BodyRetEnmu {
 	PROCESSING("0002","提交银行成功，等待查询结果"),
 	NOAUTH("2013","收款行未开通业务"),
 	FAILED("3999","其他错误"),
+	NOFIND("2009","CJ无此交易"),
 	UNKNOW("99","未知状态");
 	private String code;
     private String messsage;
