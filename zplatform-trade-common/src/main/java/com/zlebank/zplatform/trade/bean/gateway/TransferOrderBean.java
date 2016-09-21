@@ -38,9 +38,6 @@ public class TransferOrderBean  implements Serializable {
 	    @NotEmpty(message="param.empty.orderTimeout")
 	    @Length(max=10,message="param.error.orderTimeout")
 	    private String orderTimeout="";
-	    @NotEmpty(message="param.empty.payTimeout")
-	    @Length(max=14,message="param.error.payTimeout")
-	    private String payTimeout="";
 	    @Length(max=14,message="param.error.txnTime")
 	    private String txnTime="";
 	    @Length(max=256,message="param.error.frontUrl")
@@ -134,12 +131,6 @@ public class TransferOrderBean  implements Serializable {
 		}
 		public void setOrderTimeout(String orderTimeout) {
 			this.orderTimeout = orderTimeout;
-		}
-		public String getPayTimeout() {
-			return payTimeout;
-		}
-		public void setPayTimeout(String payTimeout) {
-			this.payTimeout = payTimeout;
 		}
 		public String getTxnTime() {
 			return txnTime;

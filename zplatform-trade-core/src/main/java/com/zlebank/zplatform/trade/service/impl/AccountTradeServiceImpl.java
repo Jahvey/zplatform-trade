@@ -251,7 +251,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTxnsubtype(order.getTxnSubType());
 		orderinfo.setBiztype(order.getBizType());
 		orderinfo.setOrderdesc(order.getOrderDesc());
-		orderinfo.setPaytimeout(order.getPayTimeout());
+		orderinfo.setPaytimeout(order.getOrderTimeout());
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getToMerId());
@@ -413,7 +413,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTxnsubtype(order.getTxnSubType());
 		orderinfo.setBiztype(order.getBizType());
 		orderinfo.setOrderdesc(order.getOrderDesc());
-		orderinfo.setPaytimeout(order.getPayTimeout());
+		orderinfo.setPaytimeout(order.getOrderTimeout());
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
@@ -600,7 +600,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTxnsubtype(order.getTxnSubType());
 		orderinfo.setBiztype(order.getBizType());
 		orderinfo.setOrderdesc(order.getOrderDesc());
-		orderinfo.setPaytimeout(order.getPayTimeout());
+		orderinfo.setPaytimeout(order.getOrderTimeout());
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
