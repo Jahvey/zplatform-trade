@@ -32,6 +32,6 @@ public class FailToInsertFeeException extends AbstractTradeDescribeException {
      */
     @Override
     public String getCode() {
-        return "ETSIP0010";
+        return "ETSIP0013";
     }
 }
