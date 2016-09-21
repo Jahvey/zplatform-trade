@@ -2774,46 +2774,46 @@ public class GateWayServiceImpl extends
 	}
 
 	public ResultBean bindingBankCard(String memberId, String personMemberId,
-			WapCardBean cardBean){
-		ResultBean resultBean = null;
-		TxnsOrderinfoModel orderinfo =null;
-		String amount="0";
-		if(cardBean.getTn()!=null){
-			orderinfo = getOrderinfoByTN(cardBean.getTn());
-			amount=orderinfo.getOrderamt()+"";
-		}
-		// 获取路由信息
-		ResultBean routResultBean = routeConfigService.getWapTransRout(
-				DateUtil.getCurrentDateTime(), "0", memberId,
-				BusinessEnum.RECHARGE.getBusiCode(), cardBean.getCardNo());
-		if (log.isDebugEnabled()) {
-			log.debug("获取路由信息：" + JSON.toJSON(cardBean));
-		}
-		if (routResultBean.isResultBool()) {
-			String routId = ChannelEnmu.CMBCWITHHOLDING.getChnlcode();//routResultBean.getResultObj().toString();
-			// resultBean.setRoutId(routId);
+			WapCardBean cardBean) {
+			ResultBean resultBean = null;
+			TxnsOrderinfoModel orderinfo =null;
+			TxnsLogModel txnsLog = null;
+			String amount="0";
+			if(cardBean.getTn()!=null){
+				orderinfo = getOrderinfoByTN(cardBean.getTn());
+				txnsLog = txnsLogService.get(orderinfo.getRelatetradetxn());
+				amount=orderinfo.getOrderamt()+"";
+			}else{
+				return new ResultBean("TOO0","交易流水tn不能为空");
+			}
+			// 获取路由信息
+			ResultBean routResultBean = routeConfigService.getWapTransRout(
+					DateUtil.getCurrentDateTime(),
+					amount, 
+					StringUtil.isNotEmpty(orderinfo.getSecmemberno()) ? orderinfo.getSecmemberno():orderinfo.getFirmemberno(),
+					txnsLog.getBusicode(), 
+					cardBean.getCardNo());
+			if (log.isDebugEnabled()) {
+				log.debug("获取路由信息：" + JSON.toJSON(cardBean));
+			}
+			String routId = routResultBean.getResultObj().toString();
+			if (routId == null) {
+				return new ResultBean("T001","获取路由失败");
+			}
 			IQuickPayTrade quickPayTrade = null;
 			try {
 				quickPayTrade = TradeAdapterFactory.getInstance()
 						.getQuickPayTrade(routId);
-			} catch (ClassNotFoundException e) {
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (TradeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				return new ResultBean("T001","获取路由失败");
 			}
 			TradeBean trade = new TradeBean("", "", amount, cardBean.getCardNo(),
 					cardBean.getCustomerNm(), cardBean.getCertifId(),
 					cardBean.getPhoneNo(), "", "", cardBean.getCertifTp(), "",
-					personMemberId, "", memberId, "", "", memberId, "", "",
-					BusinessEnum.CONSUMEQUICK.getBusiCode(),
+					txnsLog.getAccmemberid(), "", txnsLog.getAccsecmerno(), "", "", txnsLog.getAccsecmerno(), "", "",
+				    txnsLog.getBusicode(),
 					cardBean.getCardType(), "", "", cardBean.getCvn2(),
 					cardBean.getExpired());
 			trade.setTn(cardBean.getTn());
@@ -2828,8 +2828,7 @@ public class GateWayServiceImpl extends
 			// trade.setCardId(bindId);
 			resultBean = quickPayTrade.bankSign(trade);
 			resultBean.setRoutId(routId);
-		}
-		return resultBean;
+		    return resultBean;
 	}
 
 	@Transactional(readOnly = true)

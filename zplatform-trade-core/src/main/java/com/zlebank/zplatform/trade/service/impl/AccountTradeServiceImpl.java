@@ -552,7 +552,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			throw new TradeException("BW06");//此业务只允许是企业会员
+			throw new TradeException("BW08");//此业务只允许是企业会员
 		}
 		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
