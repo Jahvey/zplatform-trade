@@ -155,4 +155,16 @@ public class CashBankServiceImpl extends BaseServiceImpl<CashBankModel, Long> im
 		return pageVo;
 	}
 
+	/**
+	 *
+	 * @param bankCode
+	 * @return
+	 */
+	@Override
+	@Transactional(readOnly=true)
+	public CashBankModel getBankICON(String bankCode) {
+		return cashBankDAO.getBankICON(bankCode);
+	}
+
+
 }

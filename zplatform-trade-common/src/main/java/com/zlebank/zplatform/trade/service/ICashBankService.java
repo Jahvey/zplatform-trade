@@ -38,4 +38,11 @@ public interface ICashBankService extends IBaseService<CashBankModel, Long>{
      */
  	public PageVo<CashBankModel> getCardList(Map<String, Object> query, Integer pageNo,
  			Integer pageSize);
+ 	
+ 	/**
+ 	 * 获取银行图标
+ 	 * @param bankCode
+ 	 * @return
+ 	 */
+ 	public CashBankModel getBankICON(String bankCode);
 }
