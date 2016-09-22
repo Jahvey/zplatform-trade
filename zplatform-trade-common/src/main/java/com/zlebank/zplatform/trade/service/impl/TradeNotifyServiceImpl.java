@@ -274,6 +274,8 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
                  	privateKey = coopInstiService.getCoopInstiMK(orderinfo.getFirmemberno(), TerminalAccessType.MERPORTAL).getZplatformPriKey();
                  }else if("1".equals(orderinfo.getAccesstype())){
                 	 privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
+                 }else{
+                	 privateKey = coopInstiService.getCoopInstiMK(orderinfo.getFirmemberno(), TerminalAccessType.OPENAPI).getZplatformPriKey();
                  }
             	 //privateKey = merchMKService.get(orderinfo.getFirmemberno()).getLocalPriKey();
              }

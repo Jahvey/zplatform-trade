@@ -10,8 +10,13 @@
  */
 package com.zlebank.zplatform.trade.dao.impl;
 
+import java.util.List;
+
+import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.commons.dao.impl.HibernateBaseDAOImpl;
 import com.zlebank.zplatform.trade.dao.ICashBankDAO;
@@ -30,4 +35,20 @@ public class CashBankDAOImpl extends HibernateBaseDAOImpl<CashBankModel> impleme
     public Session getSession(){
         return super.getSession();
     }
+
+	/**
+	 *
+	 * @param bankCode
+	 * @return
+	 */
+	@Override
+	public CashBankModel getBankICON(String bankCode) {
+		Criteria criteria = getSession().createCriteria(CashBankModel.class);
+		criteria.add(Restrictions.like("bankcode", bankCode.substring(0,4)+"%"));
+		List<CashBankModel> resultList = criteria.list();
+		if(resultList.size()>0){
+			return resultList.get(0);
+		}
+		return null;
+	}
 }

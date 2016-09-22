@@ -82,7 +82,7 @@ public class CashBankServiceImpl extends BaseServiceImpl<CashBankModel, Long> im
     }
     
 	@Override
-	 @Transactional(readOnly=true)
+	@Transactional(readOnly=true)
 	public PageVo<CashBankModel> getCardList(Map<String, Object> map,
 			Integer pageNo, Integer pageSize) {
 		PageVo<CashBankModel> pageVo = new PageVo<CashBankModel>();
@@ -153,6 +153,17 @@ public class CashBankServiceImpl extends BaseServiceImpl<CashBankModel, Long> im
 			pageVo.setTotal(total);
 		}
 		return pageVo;
+	}
+
+	/**
+	 *
+	 * @param bankCode
+	 * @return
+	 */
+	@Override
+	@Transactional(readOnly=true)
+	public CashBankModel getBankICON(String bankCode) {
+		return cashBankDAO.getBankICON(bankCode);
 	}
 
 }

@@ -177,6 +177,8 @@ public class CMBCCrossLineQuickPayServiceImpl implements CMBCCrossLineQuickPaySe
 				TxnsWithholdingModel withholding = (TxnsWithholdingModel) resultBean.getResultObj();
 				// 更新快捷交易流水
 				txnsQuickpayService.updateCMBCWithholdingResult(withholding,payorderno);
+				//更新订单状态
+	            txnsOrderinfoDAO.updateOrderToSuccess(tradeBean.getTxnseqno());
 			} else {// 交易失败
 				txnsOrderinfoDAO.updateOrderToFail(tradeBean.getTxnseqno());
 				resultBean = new ResultBean("T000", "交易失败");
@@ -222,8 +224,6 @@ public class CMBCCrossLineQuickPayServiceImpl implements CMBCCrossLineQuickPaySe
             txnsLogService.updateAppInfo(appParty);
             IAccounting accounting = AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.fromValue(txnsLog.getBusitype()));
             accounting.accountedFor(txnseqno);
-            //更新订单状态
-            txnsOrderinfoDAO.updateOrderToSuccess(txnseqno);
             tradeNotifyService.notify(txnseqno);
         } catch (Exception e) {
             e.printStackTrace();
