@@ -95,7 +95,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
     	QueryAccResultBean result =new QueryAccResultBean();
     	ResultBean valBean = ValidateLocator.validateBeans(query);
     	if(!valBean.isResultBool()){
-    		throw  new TradeException(valBean.getErrCode(),valBean.getErrMsg());
+    		throw  new TradeException("QA00");
     	} 
     	//判断双方会员的基本账户状态是否正常 
 		PojoMember member = this.memberService.getMbmberByMemberId(query.getMemberId(), null);
@@ -114,6 +114,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		} catch (DataCheckFailedException | GetAccountFailedException e) {
 			e.printStackTrace();
 			log.error("查询余额失败:"+e.getMessage());
+			throw new TradeException("QA01");
 		}
 		return result;
 	}
@@ -124,7 +125,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
          log.info(JSONObject.fromObject(order));
          ResultBean resultBean = ValidateLocator.validateBeans(order);
          if(!resultBean.isResultBool()){
-        	 throw  new TradeException(resultBean.getErrCode(),resultBean.getErrMsg());
+        	 throw  new TradeException("TE00");
          }
 		/*******保存订单的日志*******/
 		//基本信息
@@ -297,7 +298,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		/*******保存订单的日志*******/
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if(!resultBean.isResultBool()){
-       	 throw  new TradeException(resultBean.getErrCode(),resultBean.getErrMsg());
+        	 throw  new TradeException("BC00");
         }
 		//基本信息
 		//判断订单是否存在
@@ -488,7 +489,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		/*******保存订单的日志*******/
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if(!resultBean.isResultBool()){
-       	 throw  new TradeException(resultBean.getErrCode(),resultBean.getErrMsg());
+        	 throw  new TradeException("BW00");
         }
 		//基本信息
 		//判断订单是否存在

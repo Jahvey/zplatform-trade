@@ -11,8 +11,10 @@ public class TransferOrderBean  implements Serializable {
 		@NotEmpty(message="param.empty.coopInstiId")
        @Length(max=15,message="param.error.coopInstiId")
 	    private String coopInstiId="";
+	    @NotEmpty(message="param.empty.fromMerId")
 	    @Length(max=15,message="param.error.fromMerId")
 	    private String fromMerId="";
+		@NotEmpty(message="param.empty.toMerId")
 	    @Length(max=15,message="param.error.toMerId")
 	    private String toMerId="";
 	    @NotEmpty(message="param.empty.orderId")
