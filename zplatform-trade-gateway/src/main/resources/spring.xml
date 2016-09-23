@@ -50,15 +50,15 @@
 	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
 		<property name="triggers">
 			<list>
-		
+		 
 				<ref bean="reconJobTrigger"/> 
 				<ref bean="cmbcTrigger1"/> 
-					<!-- 微信 
+			<!--微信 
 				<ref bean="refundJobTrigger"/> 
 				 <ref bean="wechatOrderTrigger"/>
 				 <ref bean="refundQrJobTrigger"/> 
 				 <ref bean="wechatQrOrderTrigger"/>
-					 -->
+			 -->		
 				<ref bean="tradeQueueJobTrigger"/>
 				<ref bean="tradeNotifyJobTrigger"/>
 				<ref bean="timeOutTradeQueueJobTrigger"/>
