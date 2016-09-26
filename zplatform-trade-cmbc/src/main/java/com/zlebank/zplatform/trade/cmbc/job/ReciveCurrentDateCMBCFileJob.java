@@ -55,7 +55,7 @@ public class ReciveCurrentDateCMBCFileJob {
      * 
      * @throws IOException
      */
-    @Transactional(propagation = Propagation.REQUIRED)
+    @Transactional(propagation = Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void execute() throws IOException {
         
         log.info("start ReciveCurrentDateCMBCFileJob");
@@ -163,7 +163,7 @@ public class ReciveCurrentDateCMBCFileJob {
             //break;
         }
         // 扫描退款回盘文件
-        path = "reexchange/";
+        path = "reexchange";
         fileNameList = ftpcmbcService.scanningCMBCRESFile(path,currentDate,FileTypeEnmu.REEXCHANGE);
         for (String fileName : fileNameList) {
             PojoDownloadLog downloadLog = downloadLogDAO.getLogByFileName(fileName);
@@ -196,9 +196,9 @@ public class ReciveCurrentDateCMBCFileJob {
             }
             File file = null;
             try {
-                String plainFilePath = ConsUtil.getInstance().cons.getCmbc_plainFilePath();
-                CMBCAESUtils.decodeAESFile(ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5().getBytes(), plainFilePath, TARGETPATH);
-                file = new File(plainFilePath);
+                //String plainFilePath = ConsUtil.getInstance().cons.getCmbc_plainFilePath();
+                //CMBCAESUtils.decodeAESFile(ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5().getBytes(), plainFilePath, TARGETPATH);
+                file = new File(TARGETPATH);
                 downloadLog.setRecode(DownLoadTypeEnmu.SUCCESS.getCode());
                 String[] files =fileName.split("/");
                 insteadPayService.analyzeCMBCFile(file,files[files.length-1],FileTypeEnmu.REEXCHANGE);

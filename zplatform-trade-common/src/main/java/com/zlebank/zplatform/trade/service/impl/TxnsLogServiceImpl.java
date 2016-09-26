@@ -15,12 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
@@ -46,8 +48,12 @@ import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 import com.zlebank.zplatform.trade.bean.enums.ChannelEnmu;
 import com.zlebank.zplatform.trade.bean.enums.ChnlTypeEnum;
+import com.zlebank.zplatform.trade.bean.enums.OrderStatusEnum;
 import com.zlebank.zplatform.trade.bean.enums.RiskLevelEnum;
+import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
+import com.zlebank.zplatform.trade.bean.enums.UnknowRetCodeEnum;
 import com.zlebank.zplatform.trade.bean.gateway.QueryBean;
+import com.zlebank.zplatform.trade.bean.queue.TradeQueueBean;
 import com.zlebank.zplatform.trade.dao.ITxnsLogDAO;
 import com.zlebank.zplatform.trade.dao.InsteadPayDetailDAO;
 import com.zlebank.zplatform.trade.dao.RspmsgDAO;
@@ -66,10 +72,12 @@ import com.zlebank.zplatform.trade.service.IMemberService;
 import com.zlebank.zplatform.trade.service.IRiskTradeLogService;
 import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
+import com.zlebank.zplatform.trade.service.TradeQueueService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
+import com.zlebank.zplatform.trade.utils.UUIDUtil;
 
 /**
  * Class Description
@@ -103,6 +111,8 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     private InsteadPayDetailDAO insteadPayDetailDAO;
     @Autowired
     private MerchService merchService;
+    @Autowired
+	private TradeQueueService tradeQueueService;
     
     @Autowired
     private CoopInstiDAO coopInstiDAO;
@@ -130,47 +140,71 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     }
     
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public ResultBean updatePayInfo_Fast(PayPartyBean payPartyBean){
         TxnsLogModel txnsLog = getTxnsLogByTxnseqno(payPartyBean.getTxnseqno());
         Map<String, Object> cardMap = null;
         if(StringUtil.isNotEmpty(payPartyBean.getCardNo())){
         	cardMap = getCardInfo(payPartyBean.getCardNo());
         }
-        String hql = "update TxnsLogModel set paytype=?,payordno=?,payinst=?,payfirmerno=?,payordcomtime=?,pan=?,cardtype=?,cardinstino=?,txnfee=?,pan_name=? where txnseqno=?";
-        super.updateByHQL(hql, new Object[]{"01",payPartyBean.getPayordno(),payPartyBean.getPayinst(),payPartyBean.getPayfirmerno(),payPartyBean.getPayordcomtime(),
-        payPartyBean.getCardNo(),cardMap==null?"":cardMap.get("TYPE")+"",cardMap==null?"":cardMap.get("BANKCODE")+"",getTxnFee(txnsLog),payPartyBean.getPanName(),payPartyBean.getTxnseqno()});
-
+        String hql = "update TxnsLogModel set paytype=?,payordno=?,payinst=?,payfirmerno=?,payordcomtime=?,pan=?,cardtype=?,cardinstino=?,txnfee=?,pan_name=?,payrettsnseqno=? where txnseqno=?";
+        super.updateByHQL(hql, 
+        		new Object[]{
+        				StringUtil.isNotEmpty(payPartyBean.getPaytype())?payPartyBean.getPaytype():"01",
+        				payPartyBean.getPayordno(),
+        				payPartyBean.getPayinst(),
+        				payPartyBean.getPayfirmerno(),
+        				payPartyBean.getPayordcomtime(),
+        				payPartyBean.getCardNo(),cardMap==null?"":cardMap.get("TYPE")+"",
+        			    cardMap==null?"":cardMap.get("BANKCODE")+"",
+        			    getTxnFee(txnsLog),
+        			    payPartyBean.getPanName(),
+        			    payPartyBean.getPayrettsnseqno(),
+        			    payPartyBean.getTxnseqno()});
         return null;
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updatePayInfo_Fast_result(String txnseqno,String retcode,String retinfo){
-        TxnsLogModel txnsLog = super.get(txnseqno);
+    	String hql = "update TxnsLogModel set payretcode=?,payretinfo=? where txnseqno=?";
+    	
+    	
+    	super.updateByHQL(hql, new Object[]{retcode,retinfo,txnseqno});
+        /*TxnsLogModel txnsLog = super.get(txnseqno);
         txnsLog.setPayretcode(retcode);
         txnsLog.setPayretinfo(retinfo);
         txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
-        super.update(txnsLog);
+        super.update(txnsLog);*/
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updatePayInfo_Fast_result(String txnseqno,String payrettsnseqno,String retcode,String retinfo){
-        TxnsLogModel txnsLog = super.get(txnseqno);
+       /* TxnsLogModel txnsLog = super.get(txnseqno);
         txnsLog.setPayretcode(retcode);
         txnsLog.setPayretinfo(retinfo);
         txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
-        txnsLog.setPayrettsnseqno(payrettsnseqno);
-        super.update(txnsLog);
+        txnsLog.setPayrettsnseqno(payrettsnseqno);*/
+        String hql = "update TxnsLogModel set payretcode=?,payretinfo=?,payrettsnseqno=?,payordfintime=? where txnseqno=?";
+        super.updateByHQL(hql, new Object[]{retcode,retinfo,payrettsnseqno,DateUtil.getCurrentDateTime(),txnseqno});
+        /*super.update(txnsLog);*/
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateCoreRetResult(String txnseqno,String retcode,String retinfo){
-        TxnsLogModel txnsLog = super.get(txnseqno);
+        /* TxnsLogModel txnsLog = super.get(txnseqno);
         txnsLog.setRetcode(retcode);
         txnsLog.setRetinfo(retinfo);
-        super.update(txnsLog);
+        if("0000".equals(retcode)){
+        	txnsLog.setTradestatflag(TradeStatFlagEnum.FINISH_SUCCESS.getStatus());
+        }else{
+        	txnsLog.setTradestatflag(TradeStatFlagEnum.FINISH_FAILED.getStatus());
+        }*/
+        String hql = "update TxnsLogModel set retcode=?,retinfo=?,tradestatflag=? where txnseqno=?";
+        super.updateByHQL(hql,new Object[]{retcode,retinfo,"0000".equals(retcode)?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus(),txnseqno});
+        //super.update(txnsLog);
     }
     
     
     @Transactional
+    @Deprecated
     public ResultBean updatePayInfo_ecitic(PayPartyBean payPartyBean){
         ResultBean resultBean =null;
           try {
@@ -200,14 +234,19 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         return resultBean;
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public ResultBean updateGateWayPayResult(PayPartyBean payPartyBean){
     	TxnsLogModel txnsLog = getTxnsLogByTxnseqno(payPartyBean.getTxnseqno());
-    	txnsLog.setPayordcomtime(DateUtil.getCurrentDateTime());
+    	txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
     	txnsLog.setPayrettsnseqno(payPartyBean.getPayrettsnseqno());
     	txnsLog.setPayretcode(payPartyBean.getPayretcode());
     	txnsLog.setPayretinfo(payPartyBean.getPayretinfo());
     	txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
+    	
+    	txnsLog.setTradeseltxn(UUIDUtil.uuid());
+    	txnsLog.setTradetxnflag("10000000");
+    	txnsLog.setRelate("10000000");
+    	txnsLog.setRetdatetime(DateUtil.getCurrentDateTime());
     	try {
             PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CHANPAY,payPartyBean.getPayretcode());
             txnsLog.setRetinfo(msg.getRspinfo());
@@ -223,6 +262,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     
     
     @Transactional
+    @Deprecated
     public ResultBean updateRoutInfo(String txnseqno,String routId,String currentStep,String cashCode){
         ResultBean resultBean =null;
         try {
@@ -239,6 +279,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     }
     
     @Transactional
+    @Deprecated
     public void updateWapRoutInfo(String txnseqno,String routId) throws TradeException{
         try {
           TxnsLogModel txnsLog = super.get(txnseqno);
@@ -262,23 +303,25 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         sqlBuffer.append("AND t.cardlen = ? ");
         sqlBuffer.append("ORDER BY t.cardbin DESC) ");
         sqlBuffer.append("WHERE ROWNUM = 1 ");
-        List<Map<String, Object>> routList =  (List<Map<String, Object>>) super.queryBySQL(sqlBuffer.toString(), new Object[]{cardNo,cardNo.trim().length()});
+        @SuppressWarnings("unchecked")
+		List<Map<String, Object>> routList =  (List<Map<String, Object>>) super.queryBySQL(sqlBuffer.toString(), new Object[]{cardNo,cardNo.trim().length()});
        
         if(routList.size()>0){
             return routList.get(0);
         }
         return null;
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public ResultBean updateAppInfo(AppPartyBean appParty){
         ResultBean resultBean =null;
         try {
-            String hql = "update TxnsLogModel set appinst=?,appordcommitime=?,appordno=?,appordfintime=?,accordfintime=? where txnseqno = ?";
-            int row = super.updateByHQL(hql, new Object[]{appParty.getAppinst(),appParty.getAppordcommitime(),appParty.getAppordno(),appParty.getAppordfintime(),DateUtil.getCurrentDateTime(),appParty.getTxnseqno()});
+            String hql = "update TxnsLogModel set appinst=?,appordcommitime=?,appordno=?,appordfintime=?,accordfintime=?,tradestatflag=? where txnseqno = ?";
+            int row = super.updateByHQL(hql, new Object[]{appParty.getAppinst(),appParty.getAppordcommitime(),appParty.getAppordno(),appParty.getAppordfintime(),DateUtil.getCurrentDateTime(),TradeStatFlagEnum.FINISH_ACCOUNTING.getStatus(),appParty.getTxnseqno()});
             log.info("effect rows:"+row);
             resultBean = new ResultBean("success");
         } catch (Exception e) {
             resultBean = new ResultBean("RC33","业务处理失败");
+            e.printStackTrace();
         }
         return resultBean;
     }
@@ -290,7 +333,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
      * @return
      */
     @Override
-    @Transactional(propagation=Propagation.REQUIRED)
+    @Transactional(readOnly=true)
     public TxnsLogModel getTxnsLogByTxnseqno(String txnseqno) {
         return super.get(txnseqno);
     }
@@ -304,8 +347,9 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     @Override
     public Long getTxnFee(TxnsLogModel txnsLog){
         //交易序列号，扣率版本，业务类型，交易金额，会员号，原交易序列号，卡类型 
-        List<Map<String, Object>> feeList = (List<Map<String, Object>>) super.queryBySQL("select FNC_GETFEES(?,?,?,?,?,?,?) as fee from dual", 
-                new Object[]{txnsLog.getTxnseqno(),txnsLog.getFeever(),txnsLog.getBusicode(),txnsLog.getAmount(),txnsLog.getAccfirmerno(),txnsLog.getTxnseqnoOg(),txnsLog.getCardtype()});
+        @SuppressWarnings("unchecked")
+		List<Map<String, Object>> feeList = (List<Map<String, Object>>) super.queryBySQL("select FNC_GETFEES(?,?,?,?,?,?,?) as fee from dual", 
+                new Object[]{txnsLog.getTxnseqno(),txnsLog.getFeever(),txnsLog.getBusicode(),txnsLog.getAmount(),txnsLog.getAccsecmerno(),txnsLog.getTxnseqnoOg(),txnsLog.getCardtype()});
         if(feeList.size()>0){
             if(StringUtil.isNull(feeList.get(0).get("FEE"))){
                 return 0L;
@@ -325,37 +369,55 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
      * @param payResult
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateReaPayRetInfo(String txnseqno, ReaPayResultBean payResult) {
-        TxnsLogModel txnsLog = super.get(txnseqno);
+    	String hql = "update TxnsLogModel set payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=? where txnseqno = ?";
+    	Object[] paramaters = null;
+       /* TxnsLogModel txnsLog = super.get(txnseqno);
         txnsLog.setPayretinfo(payResult.getResult_msg());
-        txnsLog.setPayretcode(payResult.getResult_code());
+        txnsLog.setPayretcode(payResult.getResult_code());*/
         try {
             PojoRspmsg msg =   rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.REAPAY,payResult.getResult_code());
-            txnsLog.setRetinfo(msg.getRspinfo());
-            txnsLog.setRetcode(msg.getWebrspcode());
+            /*txnsLog.setRetinfo(msg.getRspinfo());
+            txnsLog.setRetcode(msg.getWebrspcode());*/
+            paramaters = new Object[]{payResult.getResult_code(),payResult.getResult_msg(),msg.getWebrspcode(),msg.getRspinfo(),
+            		"0000".equals(msg.getWebrspcode())?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus()
+            		,txnseqno};
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            paramaters = new Object[]{payResult.getResult_code(),payResult.getResult_msg(),UnknowRetCodeEnum.REAPAY.getCode(),payResult.getResult_msg(),
+            		TradeStatFlagEnum.FINISH_FAILED.getStatus(),txnseqno};
         }
-        super.update(txnsLog);
+        super.updateByHQL(hql, paramaters);
+        
+        //super.update(txnsLog);
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateCMBCWithholdingRetInfo(String txnseqno, TxnsWithholdingModel withholdin) {
-        TxnsLogModel txnsLog = super.get(txnseqno);
-        txnsLog.setPayretinfo(withholdin.getExecmsg());
-        txnsLog.setPayretcode(withholdin.getExeccode());
+    	String hql = "update TxnsLogModel set payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=? where txnseqno = ?";
+    	Object[] paramaters = null;
+    	
+//        TxnsLogModel txnsLog = super.get(txnseqno);
+//        txnsLog.setPayretinfo(withholdin.getExecmsg());
+//        txnsLog.setPayretcode(withholdin.getExeccode());
         try {
-            PojoRspmsg msg =   rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CMBCWITHHOLDING,withholdin.getExeccode().trim());
-            txnsLog.setRetinfo(msg.getRspinfo());
-            txnsLog.setRetcode(msg.getWebrspcode());
+            PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CMBCWITHHOLDING,withholdin.getExeccode().trim());
+//            txnsLog.setRetinfo(msg.getRspinfo());
+//            txnsLog.setRetcode(msg.getWebrspcode());
+            paramaters = new Object[]{withholdin.getExeccode(),withholdin.getExecmsg(),msg.getWebrspcode(),msg.getRspinfo(),
+            		"0000".equals(msg.getWebrspcode())?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus()
+            		,txnseqno};
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-            txnsLog.setRetinfo(withholdin.getExecmsg());
-            txnsLog.setRetcode(withholdin.getExeccode());
+//            txnsLog.setRetinfo(withholdin.getExecmsg());
+//            txnsLog.setRetcode(withholdin.getExeccode());
+            paramaters = new Object[]{withholdin.getExeccode(),withholdin.getExecmsg(),withholdin.getExeccode(),withholdin.getExecmsg(),
+            		TradeStatFlagEnum.FINISH_FAILED.getStatus(),txnseqno};
         }
-        super.update(txnsLog);
+//        super.update(txnsLog);
+        super.updateByHQL(hql, paramaters);
     }
 
     /**
@@ -364,6 +426,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
      * @return
      */
     @Override
+    @Transactional(readOnly=true)
     public TxnsLogModel queryTrade(QueryBean queryBean) {
         TxncodeDefModel busiModel = txncodeDefService.getBusiCode(queryBean.getTxnType(), queryBean.getTxnSubType(), queryBean.getBizType());
         List<Object> paramList = new ArrayList<Object>();
@@ -378,14 +441,15 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
             queryBuffer.append(" and tradeseltxn = ?");
             paramList.add(queryBean.getQueryId());
         }
-        List<TxnsLogModel> resultList = (List<TxnsLogModel>) super.queryByHQL(queryBuffer.toString(), paramList.toArray());
+        @SuppressWarnings("unchecked")
+		List<TxnsLogModel> resultList = (List<TxnsLogModel>) super.queryByHQL(queryBuffer.toString(), paramList.toArray());
         if(resultList.size()>0){
             return resultList.get(0);
         }
         return null;
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveAccountTrade(AccountTradeBean accountTrade) throws TradeException{
         
         try {
@@ -409,7 +473,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
       
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateAccountTrade(AccountTradeBean accountTrade,ResultBean resultBean) throws TradeException{
         try {
             TxnsLogModel txnsLog = super.get(accountTrade.getTxnseqno());
@@ -431,15 +495,16 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         }
     }
     
+    @Transactional(readOnly=true)
     public TxnsLogModel queryLogByTradeseltxn(String queryId){
         return super.getUniqueByHQL(" from TxnsLogModel where  tradeseltxn = ? ", new Object[]{queryId});
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateAppStatus(String txnseqno,String appOrderStatus,String appOrderinfo){
         String hql = "update TxnsLogModel set appordfintime = ?,apporderstatus = ?,apporderinfo = ? where txnseqno = ?";
         super.updateByHQL(hql,new Object[]{DateUtil.getCurrentDateTime(),appOrderStatus,appOrderinfo,txnseqno});
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class) 
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void tradeRiskControl(String txnseqno,String merchId,String subMerchId,String memberId,String busiCode,String txnAmt,String cardType,String cardNo) throws TradeException{
         log.info("trade risk control start");
         int riskLevel = 0;
@@ -447,17 +512,30 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         RiskLevelEnum riskLevelEnum = null;
         String riskInfo = "";
         log.info("risk paramaters:"+merchId+"|"+subMerchId+"|"+memberId+"|"+busiCode+"|"+txnAmt+"|"+cardType+"|"+cardNo);
-        List<Map<String, Object>> riskList = (List<Map<String, Object>>) super.queryBySQL("SELECT FNC_GETRISK(?,?,?,?,?,?,?) AS RISK FROM DUAL", 
+        @SuppressWarnings("unchecked")
+		List<Map<String, Object>> riskList = (List<Map<String, Object>>) super.queryBySQL("SELECT FNC_GETRISK(?,?,?,?,?,?,?) AS RISK FROM DUAL", 
                 new Object[]{merchId,subMerchId,memberId,busiCode,txnAmt,cardType,cardNo});
         log.info("trade risk result:"+JSON.toJSONString(riskList));
         if(riskList.size()>0){
             riskInfo = riskList.get(0).get("RISK")+"";
-            String[] riskInfos =riskInfo.split(",");
-            riskOrder = Integer.valueOf(riskInfos[0]);
-            riskLevel = Integer.valueOf(riskInfos[1]);
-            riskLevelEnum = RiskLevelEnum.fromValue(riskLevel);
-            log.info("riskOrder:"+riskOrder);
-            log.info("riskLevel:"+riskLevel);
+            if(riskInfo.indexOf(",")>0){
+            	String[] riskInfos =riskInfo.split(",");
+            	try {
+    				riskOrder = Integer.valueOf(riskInfos[0]);
+    				riskLevel = Integer.valueOf(riskInfos[1]);
+    				riskLevelEnum = RiskLevelEnum.fromValue(riskLevel);
+    				log.info("riskOrder:"+riskOrder);
+    				log.info("riskLevel:"+riskLevel);
+    			} catch (Exception e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    				throw new TradeException("T034");
+    			}
+            }else{
+            	riskLevelEnum = RiskLevelEnum.fromValue(Integer.valueOf(riskInfo));
+            }
+            
+            
         }else{
             throw new TradeException("T034");
         }
@@ -501,14 +579,15 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         log.info(" trade risk control end");
     }
     
-    
+    @SuppressWarnings("unchecked")
+	@Transactional(readOnly=true)
     public List<Map<String,String>> getRiskStrategy(int orders){
         String sql = "select * from T_RISK_LIST where ORDERS = ?";
         return (List<Map<String, String>>) super.queryBySQL(sql, new Object[]{orders});
     }
 
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateAccBusiCode(String txnseqno, String busicode) {
         // TODO Auto-generated method stub
         String hql = "update TxnsLogModel set accbusicode = ? where txnseqno = ? ";
@@ -517,7 +596,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 
 
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void initretMsg(String txnseqno) throws TradeException {
         // TODO Auto-generated method stub
         try {
@@ -532,15 +611,31 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 
 
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateTxnsLog(TxnsLogModel txnsLog) {
         // TODO Auto-generated method stub
         super.update(txnsLog);
     }
+    
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+    public void updateAnonOrderToMemberOrder(String txnseqno,String memberId){
+    	 try {
+             String hql = "update TxnsLogModel set accmemberid = ?  where txnseqno = ? ";
+             super.updateByHQL(hql, new Object[]{memberId,txnseqno});
+             
+             hql = "update TxnsOrderinfoModel set memberid = ?  where relatetradetxn = ? ";
+             super.updateByHQL(hql, new Object[]{memberId,txnseqno});
+             
+         } catch (Exception e) {
+             // TODO Auto-generated catch block
+             e.printStackTrace();
+             
+         }
+    }
 
 
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveTransferLogs(List<PojoTranData> transferDataList) {
         for(PojoTranData data : transferDataList){
         	
@@ -556,12 +651,15 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
             if("00".equals(data.getBusiType())){//代付
             	txnsLog.setBusicode(BusiTypeEnum.insteadPay.getCode());
                 txnsLog.setBusitype(BusinessEnum.INSTEADPAY.getBusiCode());
+                txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户,07：退款）
             }else if("01".equals(data.getBusiType())){
             	txnsLog.setBusicode(BusiTypeEnum.withdrawal.getCode());
                 txnsLog.setBusitype(BusinessEnum.WITHDRAWALS.getBusiCode());
+                txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户,07：退款）
             }else if("02".equals(data.getBusiType())){
             	txnsLog.setBusicode(BusiTypeEnum.refund.getCode());
                 txnsLog.setBusitype(BusinessEnum.REFUND_BANK.getBusiCode());
+                txnsLog.setPaytype("07"); //支付类型（01：快捷，02：网银，03：账户,07：退款）
             }
             
             txnsLog.setAmount(data.getTranAmt().longValue());
@@ -577,7 +675,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
             txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
             txnsLog.setTradestatflag("00000000");//交易初始状态
             txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer.valueOf(member.getSetlcycle().toString())));
-            txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户）
+            
             txnsLog.setPayordno(data.getTranDataSeqNo());//支付定单号
             txnsLog.setPayinst(ChannelEnmu.CMBCINSTEADPAY.getChnlcode());//支付所属机构
             txnsLog.setPayfirmerno(ConsUtil.getInstance().cons.getCmbc_insteadpay_merid());//支付一级商户号
@@ -595,7 +693,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 
 
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveTxnsLog(TxnsLogModel txnsLogModel) throws TradeException {
         try {
             super.save(txnsLogModel);
@@ -606,17 +704,26 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         }
         
     }
+    
+    
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+    public void updateBankTransferOfTxnsLog(TxnsLogModel txnsLog){
+        String hql = "update TxnsLogModel set paytype=?, payordno = ?,payinst = ?,payfirmerno = ?,payordcomtime = ?, pan = ?,panName = ?,txnfee = ? where txnseqno = ? ";
+        Object[] paramaters = new Object[]{txnsLog.getPaytype(),txnsLog.getPayordno(),txnsLog.getPayinst(),txnsLog.getPayfirmerno(),txnsLog.getPayordcomtime(),txnsLog.getPan(),
+        		txnsLog.getPanName(),txnsLog.getTxnfee(),txnsLog.getTxnseqno()};
+        super.updateByHQL(hql, paramaters);
+    }
 
 
 	@Override
-	@Transactional(propagation=Propagation.REQUIRES_NEW)
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
 	public void saveBankTransferLogs(List<PojoBankTransferData> transferDataList) {
 		// TODO Auto-generated method stub
 		for(PojoBankTransferData data : transferDataList){
         	TxnsLogModel txnsLog = getTxnsLogByTxnseqno(data.getTranData().getTxnseqno());
             if(txnsLog!=null){
             	if("4000".equals(txnsLog.getBusitype())){
-                    txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户）
+                    txnsLog.setPaytype("07"); //支付类型（01：快捷，02：网银，03：账户 07退款）
                     txnsLog.setPayordno(data.getBankTranDataSeqNo());//支付定单号
                     txnsLog.setPayinst(ChannelEnmu.CMBCINSTEADPAY.getChnlcode());//支付所属机构
                     txnsLog.setPayfirmerno(ConsUtil.getInstance().cons.getCmbc_insteadpay_merid());//支付一级商户号
@@ -625,9 +732,9 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
                     txnsLog.setPan(data.getAccNo());
                     txnsLog.setPanName(data.getAccName());
                     txnsLog.setTxnfee(data.getTranData().getTranFee().longValue());
-                    update(txnsLog);
+                    updateBankTransferOfTxnsLog(txnsLog);
             	}else if("3000".equals(txnsLog.getBusitype())){
-            		txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户）
+            		txnsLog.setPaytype("04"); //支付类型（01：快捷，02：网银，03：账户 04代付）
                     txnsLog.setPayordno(data.getBankTranDataSeqNo());//支付定单号
                     txnsLog.setPayinst(ChannelEnmu.CMBCINSTEADPAY.getChnlcode());//支付所属机构
                     txnsLog.setPayfirmerno(ConsUtil.getInstance().cons.getCmbc_insteadpay_merid());//支付一级商户号
@@ -636,7 +743,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
                     txnsLog.setPan(data.getAccNo());
                     txnsLog.setPanName(data.getAccName());
                     txnsLog.setTxnfee(data.getTranData().getTranFee().longValue());
-                    update(txnsLog);
+                    updateBankTransferOfTxnsLog(txnsLog);
             	}
             	
                 continue;
@@ -646,10 +753,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
             
             PojoMember mbmberByMemberId = memberService2.getMbmberByMemberId(data.getTranData().getMemberId(), null);
             PojoCoopInsti coopInsti = coopInstiDAO.get(mbmberByMemberId.getInstiId());
-            //MemberBaseModel member = memberService.get(data.getTranData().getMemberId());
-
             PojoMerchDeta member = merchService.getMerchBymemberId(data.getTranData().getMemberId());
-           // MemberBaseModel member = memberService.get(data.getTranData().getMemberId());
             PojoMember memberPojoMember = memberService2.getMbmberByMemberId(data.getTranData().getMemberId(), null);
             PojoCoopInsti pojoCoopInsti = coopInstiDAO.get(memberPojoMember.getInstiId());
 
@@ -707,7 +811,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         }
 	}
 
-	@Transactional(propagation=Propagation.REQUIRES_NEW)
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
 	public void saveBossPayBankTransferLogs(List<PojoBankTransferData> transferDataList) {
 		// TODO Auto-generated method stub
 		for(PojoBankTransferData data : transferDataList){
@@ -799,7 +903,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
                 + " sum(t.amount) totalAmount,"
                 + " sum(t.txnfee) totalfee" + " from t_txns_log t"
                 + " where t.ACCSECMERNO = ?" + " and t.ACCSETTLEDATE = ?"
-                + " and t.busicode in (40000001，40000002)"
+                + " and t.busicode in (40000001,40000002)"
                 + " and SUBSTR(trim(t.retcode), -2) = '00'";
         return (List<?>) super.queryBySQL(queryString, new Object[]{memberId,
                 date});
@@ -819,16 +923,18 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
         return (List<?>) super.queryBySQL(queryString, new Object[]{memberId,date});//,date
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @SuppressWarnings("unchecked")
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void excuteRecon(){
     	log.info("start ReconJob");
+    	
 		List<Map<String, Object>> selfTxnList = (List<Map<String, Object>>) queryBySQL("SELECT * FROM T_SELF_TXN T WHERE STATUS = ? AND RESULT = ?", new Object[]{"9","02"});
 		if(selfTxnList.size()>0){
 			for(Map<String, Object> value:selfTxnList){
 				TxnsLogModel txnsLog = getTxnsLogByTxnseqno(value.get("TXNSEQNO")+"");
 				log.info("txnsLog:"+txnsLog.getTxnseqno());
 				//通道手续费
-				Long channelFee = Long.valueOf(value.get("CFEE")+"")+Long.valueOf(StringUtil.isEmpty(value.get("DFEE")+"")?"0":value.get("DFEE")+"");
+				Long channelFee = Long.valueOf(StringUtil.isEmpty(value.get("CFEE")+"")?"0":value.get("CFEE")+"")+Long.valueOf(StringUtil.isEmpty(value.get("DFEE")+"")?"0":value.get("DFEE")+"");
 				String payMemberId = "";
         		String payToMemberId = "";
 				 //记录提现账务
@@ -906,6 +1012,9 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (IllegalEntryRequestException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 	            
 			}
@@ -913,8 +1022,9 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 		log.info("end ReconJob");
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
-    public void excuteSetted() throws AccBussinessException, AbstractBusiAcctException, NumberFormatException{
+    @SuppressWarnings("unchecked")
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+    public void excuteSetted() throws AccBussinessException, AbstractBusiAcctException, NumberFormatException, IllegalEntryRequestException{
     	log.info("start excuteSetted Job");
     	List<Map<String, Object>> selfTxnList = (List<Map<String, Object>>) queryBySQL("SELECT * FROM T_SELF_TXN T WHERE STATUS = ? AND RESULT = ?", new Object[]{"9","03"});
     	if(selfTxnList.size()>0){
@@ -923,7 +1033,7 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     			
 				log.info("txnsLog:"+txnsLog.getTxnseqno());
 				//通道手续费
-				Long channelFee = Long.valueOf(value.get("CFEE")+"")+Long.valueOf(StringUtil.isEmpty(value.get("DFEE")+"")?"0":value.get("DFEE")+"");
+				Long channelFee = Long.valueOf(StringUtil.isEmpty(value.get("CFEE")+"")?"0":value.get("CFEE")+"")+Long.valueOf(StringUtil.isEmpty(value.get("DFEE")+"")?"0":value.get("DFEE")+"");
 				String payMemberId = "";
         		String payToMemberId = "";
         		String busiType = txnsLog.getBusitype();
@@ -996,7 +1106,326 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
 	 * @return
 	 */
 	@Override
+	@Transactional(readOnly=true)
 	public TxnsLogModel getTxnsLogByPayOrderNo(String payOrderNo) {
 		return super.getUniqueByHQL(" from TxnsLogModel where  payordno = ? and paytype = ?", new Object[]{payOrderNo,"05"});
+	}
+
+
+	/**
+	 *
+	 * @param txnseqno
+	 * @param payrettsnseqno
+	 * @param retcode
+	 * @param retinfo
+	 */
+	@Override
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateWeChatRefundResult(String txnseqno,
+			String payrettsnseqno, String retcode, String retinfo) {
+		TxnsLogModel txnsLog = super.get(txnseqno);
+		txnsLog.setPayrettsnseqno(payrettsnseqno);
+        txnsLog.setPayretcode(retcode);
+        txnsLog.setPayretinfo(retinfo);
+        txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
+        txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
+        txnsLog.setTradeseltxn(UUIDUtil.uuid());
+    	txnsLog.setTradetxnflag("10000000");
+    	txnsLog.setRelate("10000000");
+    	txnsLog.setRetdatetime(DateUtil.getCurrentDateTime());
+    	try {
+            PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.WECHAT,retcode);
+            txnsLog.setRetinfo(msg.getRspinfo());
+            txnsLog.setRetcode(msg.getWebrspcode());
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        super.update(txnsLog);
+	}
+
+
+	@Override
+	@Transactional(readOnly=true)
+	public List<?> getRefundOrderInfo(String channelId,int mins ) {
+		StringBuffer sb= new StringBuffer();
+		sb.append(" select ttl.txnseqno ");
+		sb.append(" from t_txns_log ttl ");
+		sb.append(" join  t_txns_refund ttr  on ttr.reltxnseqno= ttl.txnseqno  ");
+		sb.append(" join t_txns_orderinfo  tto on tto.relatetradetxn= ttl.txnseqno  ");
+		sb.append(" where 1=1 ");
+		//退款类型
+		//sb.append(" and ttr.refundtype=? ");
+		//微信渠道
+		sb.append(" and ttl.payinst=? ");
+		//订单状态为待支付
+		sb.append(" and tto.status in (?,?) ");
+		//退款申请成功的
+		sb.append(" and ttl.payretcode=? ");
+		sb.append(" and ceil((to_date(?, 'yyyy-mm-dd hh24:mi:ss')-to_date(ttl.payordcomtime,'yyyy-mm-dd hh24:mi:ss'))*24*60)>=? ");
+		List<?> result = (List<?>) super.queryBySQL(sb.toString(), new Object[]{channelId==null?ChannelEnmu.WEBCHAT.getChnlcode():channelId,OrderStatusEnum.INITIAL.getStatus(),OrderStatusEnum.PAYING.getStatus(),"SUCCESS",DateUtil.getTimeStamp(),mins });
+	     return result;
+	}
+
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Object> queryTxnsLog(Map<String, Object> map) {
+		StringBuffer hql= new StringBuffer();
+		hql.append(" select t.txnseqno from TxnsLogModel t ,TxnsOrderinfoModel t1 where t.txnseqno=t1.relatetradetxn ");
+		//hql.append(" where 1=1 ");
+		if(map!=null){
+			//订单状态
+			List<String> statList =new ArrayList<String>();
+			if(map.get("statList")!=null){
+				statList= (List<String>) map.get("statList");
+			}
+			if(statList.size()>0){
+				hql.append(" and t1.status in(");
+				for(int i=0;i<statList.size();i++){
+					if(i==0){
+						hql.append(":statId"+i);
+					}else{
+						hql.append(",:statId"+i);
+					}
+				}
+				hql.append(") ");
+			}
+			//支付类型
+			String paytype = map.get("paytype")==null?"" :map.get("paytype").toString();
+			if(StringUtil.isNotEmpty(paytype)){
+				hql.append(" and paytype=:paytype ");
+			}
+			//支付机构
+			String payinst = map.get("payinst")==null?"":map.get("payinst").toString();
+			if(StringUtil.isNotEmpty(payinst)){
+				hql.append(" and payinst=:payinst ");
+			}
+			//交易类型
+			String busitype = map.get("busitype")==null?"":map.get("busitype").toString();
+			if(StringUtil.isNotEmpty(busitype)){
+				hql.append(" and busitype=:busitype ");
+			}
+			hql.append(" order by t.txnseqno ");
+			Session session = getSession();
+	        Query query = session.createQuery(hql.toString());
+			for(int i=0;i<statList.size();i++){
+				query.setParameter("statId"+i, statList.get(i));
+			}
+			if(StringUtil.isNotEmpty(paytype)){
+				 query.setParameter("paytype", paytype);
+			}
+			if(StringUtil.isNotEmpty(busitype)){
+				 query.setParameter("busitype", busitype);
+			}
+			if(StringUtil.isNotEmpty(payinst)){
+				query.setParameter("payinst", payinst);
+			}
+	        return query.list();
+		}
+	       
+		return null;
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateTradeStatFlag(String txnseqno,TradeStatFlagEnum tradeStatFlagEnum){
+		String hql = "update TxnsLogModel set tradestatflag = ? where txnseqno = ?";
+		super.updateByHQL(hql, new Object[]{tradeStatFlagEnum.getStatus(),txnseqno});
+		if(tradeStatFlagEnum == TradeStatFlagEnum.OVERTIME){//交易超时时加入超时队列中
+			TxnsLogModel txnsLog = getTxnsLogByTxnseqno(txnseqno);
+			TradeQueueBean tradeQueueBean = new TradeQueueBean();
+			tradeQueueBean.setTxnseqno(txnseqno);
+			tradeQueueBean.setPayInsti(txnsLog.getPayinst());
+			tradeQueueBean.setTxnDateTime(txnsLog.getTxndate()+txnsLog.getTxntime());
+			tradeQueueBean.setBusiType(txnsLog.getBusitype());
+			tradeQueueService.addTimeOutQueue(tradeQueueBean);
+		}else if(tradeStatFlagEnum == TradeStatFlagEnum.PAYING){
+			TxnsLogModel txnsLog = getTxnsLogByTxnseqno(txnseqno);
+			TradeQueueBean tradeQueueBean = new TradeQueueBean();
+			tradeQueueBean.setTxnseqno(txnseqno);
+			tradeQueueBean.setPayInsti(txnsLog.getPayinst());
+			tradeQueueBean.setTxnDateTime(txnsLog.getTxndate()+txnsLog.getTxntime());
+			tradeQueueBean.setBusiType(txnsLog.getBusitype());
+			tradeQueueService.addTradeQueue(tradeQueueBean);
+		}
+		
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateCMBCTradeData(PayPartyBean payPartyBean){
+		Object[] paramaters = null;
+        TxnsLogModel txnsLog = getTxnsLogByTxnseqno(payPartyBean.getTxnseqno());
+        Map<String, Object> cardMap = null;
+        if(StringUtil.isNotEmpty(payPartyBean.getCardNo())){
+        	cardMap = getCardInfo(payPartyBean.getCardNo());
+        }
+        String hql = "update TxnsLogModel set paytype=?,payordno=?,payinst=?,payfirmerno=?,payordcomtime=?,pan=?,cardtype=?,cardinstino=?,txnfee=?,pan_name=?,payrettsnseqno=?,payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=?,payordfintime=?, retdatetime=?,tradetxnflag=?,relate=?,tradeseltxn=? where txnseqno=?";
+        
+	    try {
+	        PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CMBCWITHHOLDING,payPartyBean.getPayretcode().trim());
+	        paramaters = new Object[]{
+	        		StringUtil.isNotEmpty(payPartyBean.getPaytype())?payPartyBean.getPaytype():"01",
+					payPartyBean.getPayordno(),
+					payPartyBean.getPayinst(),
+					payPartyBean.getPayfirmerno(),
+					payPartyBean.getPayordcomtime(),
+					payPartyBean.getCardNo(),cardMap==null?"":cardMap.get("TYPE")+"",
+				    cardMap==null?"":cardMap.get("BANKCODE")+"",
+				    getTxnFee(txnsLog),
+				    payPartyBean.getPanName(),
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    msg.getWebrspcode(),msg.getRspinfo(),
+	        		"0000".equals(msg.getWebrspcode())?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    } catch (Exception e) {
+	        paramaters = new Object[]{
+	        		StringUtil.isNotEmpty(payPartyBean.getPaytype())?payPartyBean.getPaytype():"01",
+					payPartyBean.getPayordno(),
+					payPartyBean.getPayinst(),
+					payPartyBean.getPayfirmerno(),
+					payPartyBean.getPayordcomtime(),
+					payPartyBean.getCardNo(),cardMap==null?"":cardMap.get("TYPE")+"",
+				    cardMap==null?"":cardMap.get("BANKCODE")+"",
+				    getTxnFee(txnsLog),
+				    payPartyBean.getPanName(),
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+	        		TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    }
+	    super.updateByHQL(hql, paramaters);
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateSMSErrorData(String txnseqno,String retcode,String retinfo){
+    	String hql = "update TxnsLogModel set payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=? where txnseqno=?";
+    	super.updateByHQL(hql, new Object[]{
+    			retcode,
+    			retinfo,
+    			retcode,
+    			retinfo,
+    			"0000".equals(retcode)?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+    			txnseqno}
+    	);
+    }
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateWeChatTradeData(PayPartyBean payPartyBean){
+		Object[] paramaters = null;
+       
+        String hql = "update TxnsLogModel set payrettsnseqno=?,payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=?,payordfintime=?, retdatetime=?,tradetxnflag=?,relate=?,tradeseltxn=? where txnseqno=?";
+        
+	    try {
+	        PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.WECHAT,payPartyBean.getPayretcode().trim());
+	        paramaters = new Object[]{
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    msg.getWebrspcode(),
+				    msg.getRspinfo(),
+	        		"0000".equals(msg.getWebrspcode())?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    } catch (Exception e) {
+	        paramaters = new Object[]{
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    UnknowRetCodeEnum.WECHAT.getCode(),
+				    payPartyBean.getPayretinfo().trim(),
+	        		TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    }
+	    super.updateByHQL(hql, paramaters);
+	}
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateTradeData(PayPartyBean payPartyBean){
+		Object[] paramaters = null;
+	       
+        String hql = "update TxnsLogModel set payrettsnseqno=?,payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=?,payordfintime=?, retdatetime=?,tradetxnflag=?,relate=?,tradeseltxn=? where txnseqno=?";
+        
+	    try {
+	        PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(payPartyBean.getChnlTypeEnum(),payPartyBean.getPayretcode().trim());
+	        paramaters = new Object[]{
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    msg.getWebrspcode(),
+				    msg.getRspinfo(),
+	        		"0000".equals(msg.getWebrspcode())?TradeStatFlagEnum.FINISH_SUCCESS.getStatus():TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    } catch (Exception e) {
+	        paramaters = new Object[]{
+				    payPartyBean.getPayrettsnseqno(),
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    UnknowRetCodeEnum.fromChannl(payPartyBean.getPayinst()).getCode(),
+				    payPartyBean.getPayretinfo().trim(),
+	        		TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		DateUtil.getCurrentDateTime(),
+	        		"10000000",
+	        		"10000000",
+	        		UUIDUtil.uuid(),
+	        		payPartyBean.getTxnseqno()};
+	    }
+	    super.updateByHQL(hql, paramaters);
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateTradeFailed(PayPartyBean payPartyBean){
+		String hql = "update TxnsLogModel set payretcode=?,payretinfo=?,retcode=?,retinfo=?,tradestatflag=?,payordfintime=? where txnseqno=?";
+		Object[] paramaters = null;
+		
+		try {
+	        PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(payPartyBean.getChnlTypeEnum(),payPartyBean.getPayretcode().trim());
+	        paramaters = new Object[]{
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    msg.getWebrspcode(),
+				    msg.getRspinfo(),
+	        		TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		payPartyBean.getTxnseqno()};
+	    } catch (Exception e) {
+	        paramaters = new Object[]{
+				    payPartyBean.getPayretcode().trim(),
+				    payPartyBean.getPayretinfo().trim(),
+				    UnknowRetCodeEnum.fromChannl(payPartyBean.getPayinst()).getCode(),
+				    payPartyBean.getPayretinfo().trim(),
+	        		TradeStatFlagEnum.FINISH_FAILED.getStatus(),
+	        		DateUtil.getCurrentDateTime(),
+	        		payPartyBean.getTxnseqno()};
+	    }
+		 super.updateByHQL(hql, paramaters);
 	}
 }

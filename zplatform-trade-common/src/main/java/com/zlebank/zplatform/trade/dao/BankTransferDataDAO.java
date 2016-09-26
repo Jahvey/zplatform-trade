@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.zlebank.zplatform.commons.dao.BaseDAO;
+import com.zlebank.zplatform.trade.bean.cmbc.ReexchangeBean;
 import com.zlebank.zplatform.trade.bean.enums.InsteadPayTypeEnum;
 import com.zlebank.zplatform.trade.bean.page.QueryTransferBean;
 import com.zlebank.zplatform.trade.model.PojoBankTransferData;
@@ -97,4 +98,10 @@ public interface BankTransferDataDAO  extends BaseDAO<PojoBankTransferData>{
      * @param status
      */
     public void updateBankTransferStatus(String bankTranBatchId,String status);
+    
+    /**
+     * 更新退汇交易数据
+     * @param reexchangeList
+     */
+    public void batchUpdateReexchangeTransData(List<ReexchangeBean> reexchangeList);
 }

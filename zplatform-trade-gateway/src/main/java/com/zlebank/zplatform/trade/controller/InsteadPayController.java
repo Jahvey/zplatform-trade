@@ -67,6 +67,7 @@ import com.zlebank.zplatform.trade.insteadPay.message.RealnameAuthQuery_Response
 import com.zlebank.zplatform.trade.insteadPay.message.RealnameAuth_Request;
 import com.zlebank.zplatform.trade.insteadPay.message.RealnameAuth_Response;
 import com.zlebank.zplatform.trade.message.ResultMessage;
+import com.zlebank.zplatform.trade.service.IRouteConfigService;
 import com.zlebank.zplatform.trade.service.InsteadPayService;
 import com.zlebank.zplatform.trade.service.MerchWhiteListService;
 import com.zlebank.zplatform.trade.service.RealNameAuthService;
@@ -102,6 +103,9 @@ public class InsteadPayController {
     
     @Autowired
     private MerchWhiteListService merchWhiteListService;
+    
+    @Autowired
+	private IRouteConfigService routeConfigService;
     
     // Mock 地址
     @RequestMapping("/insteadPayMock.htm")
@@ -199,8 +203,7 @@ public class InsteadPayController {
     // 批量代付类交易
     @RequestMapping("/batchInsteadPay.htm")
     public ModelAndView batchInsteadPay(String data, HttpSession httpSession, HttpServletResponse response){
-
-        PrintWriter responseStream = getPrintWriter(response);
+    	PrintWriter responseStream = getPrintWriter(response);
         if (log.isDebugEnabled()) {
             log.debug("原报文数据："+data);
         }
@@ -264,7 +267,10 @@ public class InsteadPayController {
        StringBuilder errorMsgDetail = new StringBuilder();
        for (InsteadPayFile file : requestBean.getFileContent()) {
            if (StringUtil.isEmpty(file.getBankCode())) {
-               file.setBankCode("000000000000");
+        	   //如查银行卡号没有，则通过银行卡号获取联行号
+        	   String bankNumber = routeConfigService.getCardPBCCode(file.getAccNo()).get("PBC_BANKCODE")+"";
+        	   file.setBankCode(bankNumber);
+               //file.setBankCode("000000000000");
            }
            // 校验报文bean数据
            String error = HibernateValidatorUtil.validateBeans(file);
@@ -665,6 +671,8 @@ public class InsteadPayController {
         }
         return responseStream;
     }
+    
+   
     
 
 }

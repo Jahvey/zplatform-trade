@@ -24,6 +24,9 @@ public class QueryTransferBean implements Serializable{
     private String openStatus;
     /**转账状态**/
     private String tranStatus;
+    /**商户订单号**/
+    private String merchOrderNo;
+    
     public long getTid() {
         return tid;
     }
@@ -72,6 +75,18 @@ public class QueryTransferBean implements Serializable{
 	public void setTranStatus(String tranStatus) {
 		this.tranStatus = tranStatus;
 	}
+	/**
+	 * @return the merchOrderNo
+	 */
+	public String getMerchOrderNo() {
+		return merchOrderNo;
+	}
+	/**
+	 * @param merchOrderNo the merchOrderNo to set
+	 */
+	public void setMerchOrderNo(String merchOrderNo) {
+		this.merchOrderNo = merchOrderNo;
+	}
+	
     
 }
-

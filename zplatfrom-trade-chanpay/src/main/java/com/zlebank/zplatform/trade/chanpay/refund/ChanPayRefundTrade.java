@@ -70,7 +70,7 @@ public class ChanPayRefundTrade implements IRefundTrade{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			PayPartyBean payPartyBean = new PayPartyBean(tradeBean.getTxnseqno(),
-					"01", "", "92000001",
+					"07", "", "92000001",
 					ConsUtil.getInstance().cons.getCmbc_merid(), "",
 					DateUtil.getCurrentDateTime(), "", txnsLog_old.getPan());
 			payPartyBean.setPanName(txnsLog_old.getPanName());
@@ -81,7 +81,7 @@ public class ChanPayRefundTrade implements IRefundTrade{
 		}
 		//记录支付流水信息
 		PayPartyBean payPartyBean = new PayPartyBean(tradeBean.getTxnseqno(),
-				"01", "", "92000001",
+				"07", "", "92000001",
 				ConsUtil.getInstance().cons.getCmbc_merid(), "",
 				DateUtil.getCurrentDateTime(), "", txnsLog_old.getPan());
 		payPartyBean.setPanName(txnsLog_old.getPanName());

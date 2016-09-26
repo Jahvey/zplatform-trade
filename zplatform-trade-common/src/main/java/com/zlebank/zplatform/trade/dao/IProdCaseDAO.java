@@ -25,4 +25,5 @@ import com.zlebank.zplatform.trade.model.ProdCaseModel;
  */
 public interface IProdCaseDAO extends BaseDAO<ProdCaseModel>{
     Session getSession();
+    public ProdCaseModel getMerchProd(String prdtver,String busicode);
 }

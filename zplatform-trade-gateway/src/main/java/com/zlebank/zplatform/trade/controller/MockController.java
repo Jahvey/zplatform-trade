@@ -45,7 +45,7 @@ import com.zlebank.zplatform.trade.insteadPay.message.InsteadPay_Request;
 import com.zlebank.zplatform.trade.insteadPay.message.RealnameAuthFile;
 import com.zlebank.zplatform.trade.insteadPay.message.RealnameAuth_Request;
 import com.zlebank.zplatform.trade.service.InsteadPayService;
-import com.zlebank.zplatform.trade.service.MerchWhiteListService;
+import com.zlebank.zplatform.trade.service.MerchWhiteListServiceExt;
 import com.zlebank.zplatform.trade.service.RealNameAuthService;
 
 /**
@@ -83,7 +83,7 @@ public class MockController {
     private RealNameAuthService realNameAuthService;
     
     @Autowired
-    private MerchWhiteListService merchWhiteListService;
+    private MerchWhiteListServiceExt merchWhiteListService;
     
     // Mock 地址
     @RequestMapping("/index.htm")

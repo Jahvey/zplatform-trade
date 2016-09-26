@@ -76,9 +76,9 @@ public class CreateInsteadPayMassage {
     public static void main(String[] args) throws Exception {
         CreateInsteadPayMassage run = new CreateInsteadPayMassage();
         // 生成代付报文
-        run.createInsteadPay();
+     //   run.createInsteadPay();
         // 生成代付查询结果      
-        //run.createInsteadPayQuery();
+        run.createInsteadPayQuery();
 
 //        run.createInsteadPay();
 

@@ -10,17 +10,23 @@
  */
 package com.zlebank.zplatform.trade.service.impl;
 
+import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.zlebank.zplatform.acc.bean.enums.BusiType;
+import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
+import com.zlebank.zplatform.acc.bean.enums.Usage;
+import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
 import com.zlebank.zplatform.commons.utils.StringUtil;
+import com.zlebank.zplatform.member.bean.FinanceProductAccountBean;
+import com.zlebank.zplatform.member.bean.FinanceProductQueryBean;
 import com.zlebank.zplatform.member.pojo.PojoMerchDeta;
+import com.zlebank.zplatform.member.service.FinanceProductAccountService;
 import com.zlebank.zplatform.member.service.MerchService;
 import com.zlebank.zplatform.trade.bean.ResultBean;
+import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 import com.zlebank.zplatform.trade.bean.gateway.OrderBean;
 import com.zlebank.zplatform.trade.bean.wap.WapOrderBean;
 import com.zlebank.zplatform.trade.dao.IProdCaseDAO;
@@ -52,6 +58,8 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
     private ITxncodeDefService txncodeDefService;
     @Autowired
     private MerchService merchService;
+    @Autowired
+    private FinanceProductAccountService financeProductAccountService;
     /**
      *
      * @return
@@ -69,11 +77,11 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
     @Override
     public ResultBean verifyBusiness(OrderBean order) {
         ResultBean resultBean = null;
-        PojoMerchDeta member = null;
+        //PojoMerchDeta member = null;
         TxncodeDefModel busiModel = txncodeDefService.getBusiCode(order.getTxnType(), order.getTxnSubType(), order.getBizType());
-        if(StringUtil.isNotEmpty(order.getMerId())){
+        /*if(StringUtil.isNotEmpty(order.getMerId())){
         	member = merchService.getMerchBymemberId(order.getMerId());//memberService.getMemberByMemberId(order.getMerId());
-        	ProdCaseModel prodCase= getMerchProd(member.getPrdtVer(),busiModel.getBusicode());
+        	ProdCaseModel prodCase= prodCaseDAO.getMerchProd(member.getPrdtVer(),busiModel.getBusicode());
             if(prodCase==null){
                 resultBean = new ResultBean("GW26", "商户未开通此业务");
             }else {
@@ -86,8 +94,45 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
             }else{
             	resultBean = new ResultBean("GW26", "个人用户未开通此业务");
             }
+        }*/
+        BusiTypeEnum busiTypeEnum = BusiTypeEnum.fromValue(busiModel.getBusitype());
+        if(busiTypeEnum==BusiTypeEnum.consumption){//消费
+        	BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
+        	if(StringUtil.isNotEmpty(order.getMerId())){
+        		 //throw new CommonException("GW26", "商户号为空");
+        		 resultBean = new ResultBean("GW26", "商户号为空");
+        	}
+        	PojoMerchDeta member = merchService.getMerchBymemberId(order.getMerId());//memberService.getMemberByMemberId(order.getMerId());.java
+        	ProdCaseModel prodCase= prodCaseDAO.getMerchProd(member.getPrdtVer(),busiModel.getBusicode());
+            if(prodCase==null){
+               // throw new CommonException("GW26", "商户未开通此业务");
+                resultBean = new ResultBean("GW26", "商户未开通此业务");
+            }
+            if(BusinessEnum.CONSUMEQUICK_PRODUCT==businessEnum){//产品消费业务
+            	FinanceProductQueryBean financeProductQueryBean = new FinanceProductQueryBean();
+            	financeProductQueryBean.setProductCode(order.getProductcode());
+            	try {
+					FinanceProductAccountBean productAccountBean = financeProductAccountService.queryBalance(financeProductQueryBean, Usage.BASICPAY);
+					if(AcctStatusType.NORMAL!=AcctStatusType.fromValue(productAccountBean.getStatus())){
+						//throw new CommonException("", "产品异常，请联系客服");
+						resultBean = new ResultBean("T000", "产品异常，请联系客服");
+					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					//throw new CommonException("", "产品不存在");
+					resultBean = new ResultBean("T000", "产品不存在");
+				}
+            }
+        }else if(busiTypeEnum==BusiTypeEnum.charge){//充值
+        	/*if (StringUtil.isEmpty(order.getMemberId()) || "999999999999999".equals(order.getMemberId())) {
+				throw new CommonException("GW19", "会员不存在无法进行充值");
+			}*/
+        }else if(busiTypeEnum==BusiTypeEnum.withdrawal){//提现
+        	/*if (StringUtil.isEmpty(orderBean.getMemberId()) || "999999999999999".equals(orderBean.getMemberId())) {
+				throw new CommonException("GW19", "会员不存在无法进行充值");
+			}*/
         }
-        
         return resultBean;
     }
     
@@ -110,9 +155,12 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
         return resultBean;
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+   
     public ProdCaseModel getMerchProd(String prdtver,String busicode){
-        return super.getUniqueByHQL("from ProdCaseModel where prdtver=? and busicode=?", new Object[]{prdtver,busicode});
+    	Criteria criteria = prodCaseDAO.getSession().createCriteria(ProdCaseModel.class);
+    	criteria.add(Restrictions.eq("prdtver", prdtver));
+    	criteria.add(Restrictions.eq("busicode", busicode));
+        return (ProdCaseModel) criteria.uniqueResult();
     }
 
     public void verifyWapBusiness(WapOrderBean order) throws TradeException {

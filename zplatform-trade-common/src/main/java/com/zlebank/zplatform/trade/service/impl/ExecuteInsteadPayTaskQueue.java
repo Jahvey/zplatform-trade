@@ -68,7 +68,7 @@ public class ExecuteInsteadPayTaskQueue implements Runnable{
             
             PostMethod post = null;
             post = new PostMethod(url);
-            post.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            post.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
             post.addParameter("data", trade.getData());
             if(StringUtil.isNotEmpty(trade.getAddit()))
                 post.addParameter("addit", trade.getAddit());

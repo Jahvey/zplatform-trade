@@ -23,7 +23,6 @@ import com.zlebank.zplatform.trade.bean.reapal.QueryBean;
 import com.zlebank.zplatform.trade.bean.reapal.SMSBean;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
-import com.zlebank.zplatform.trade.utils.OrderSerialNumber;
 import com.zlebank.zplatform.trade.utils.UUIDUtil;
 
 /**

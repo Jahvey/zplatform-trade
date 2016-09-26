@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-deploy</artifactId>
-		<version>1.3.1-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 		<relativePath>../zplatform-trade-deploy/pom.xml</relativePath>
 	</parent>
 	<artifactId>zplatform-trade-core</artifactId>
@@ -20,42 +20,42 @@
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-reapay</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-test</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-acc</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-cmbc</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-common</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-bosspay</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
-		</dependency>
+			<version>1.4.0-SNAPSHOT</version>
+		</dependency> -->
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-chanpay</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatfrom-trade-wechat</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -67,6 +67,35 @@
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-zlpay</artifactId>
 			<version>1.3.0-SNAPSHOT</version>
-		</dependency> -->
+		</dependency> 
+		-->
+		<dependency> 
+	        <groupId>org.apache.httpcomponents</groupId> 
+	        <artifactId>httpcore</artifactId> 
+	        <version>4.4.1</version>
+	        <scope>provided</scope>
+       </dependency> 
+		<dependency>
+			<groupId>commons-httpclient</groupId>
+			<artifactId>commons-httpclient</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.httpcomponents</groupId>
+		    <artifactId>httpclient</artifactId>
+		    <version>4.3.4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.zlebank.zplatform</groupId>
+			<artifactId>zplatform-trade-timeout</artifactId>
+			<version>1.6.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.zlebank.zplatform</groupId>
+			<artifactId>zplatform-trade-wechat-qr</artifactId>
+			<version>1.6.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>
+

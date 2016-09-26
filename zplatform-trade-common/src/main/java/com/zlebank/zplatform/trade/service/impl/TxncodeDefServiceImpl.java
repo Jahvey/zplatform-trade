@@ -10,13 +10,18 @@
  */
 package com.zlebank.zplatform.trade.service.impl;
 
+import java.util.List;
+import java.util.Map;
+
 import org.hibernate.Session;
+import org.hibernate.type.TrueFalseType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.trade.dao.ITxncodeDefDAO;
+import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.model.TxncodeDefModel;
 import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
@@ -43,9 +48,23 @@ public class TxncodeDefServiceImpl extends BaseServiceImpl<TxncodeDefModel, Long
         // TODO Auto-generated method stub
         return txncodeDefDAO.getSession();
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(readOnly=true)
     public TxncodeDefModel getBusiCode(String txntype,String txnsubtype,String biztype){
         return super.getUniqueByHQL("from TxncodeDefModel where txntype=? and txnsubtype=? and biztype=? ", new Object[]{txntype,txnsubtype,biztype});
     }
 
+    @Transactional(readOnly=true)
+	public String getDefaultVerInfo(String instiCode, String busicode,
+			int verType) throws TradeException {
+		List<Map<String, Object>> resultList = (List<Map<String, Object>>) super
+				.queryBySQL(
+						"select COOP_INSTI_CODE,BUSI_CODE,VER_TYPE,VER_VALUE from T_NONMER_DEFAULT_CONFIG where COOP_INSTI_CODE=? and BUSI_CODE=? and VER_TYPE=?",
+						new Object[] { instiCode, busicode, verType + "" });
+		if (resultList.size() > 0) {
+			Map<String, Object> valueMap = resultList.get(0);
+			return valueMap.get("VER_VALUE").toString();
+		}
+		throw new TradeException("GW03");
+		// return null;
+	}
 }

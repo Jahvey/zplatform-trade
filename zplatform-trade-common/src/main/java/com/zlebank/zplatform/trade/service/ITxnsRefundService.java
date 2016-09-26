@@ -34,9 +34,24 @@ public interface ITxnsRefundService extends IBaseService<TxnsRefundModel, Long>{
      * @param refundOrder
      */
     public void updateRefundResult(TxnsRefundModel refundOrder);
+    /**
+     * 通过退款订单号获取退款交易信息
+     * @param refundorderno
+     * @return
+     */
     public TxnsRefundModel getRefundByRefundor(String refundorderno);
+    /**
+     * 更新退款交易数据
+     * @param txnsRefundModel
+     */
     public void updateRefund(TxnsRefundModel txnsRefundModel);
-    public TxnsRefundModel getRefundByOldTxnSeqno(String itxnsCode, String string);
+    /**
+     * 通过原始交易流水号取得退款交易信息
+     * @param txnseqno_old
+     * @param merchno
+     * @return
+     */
+    public TxnsRefundModel getRefundByOldTxnSeqno(String txnseqno_old, String merchno);
     
     /**
      * 通过交易序列号获取退款
@@ -51,4 +66,16 @@ public interface ITxnsRefundService extends IBaseService<TxnsRefundModel, Long>{
      * @return
      */
     public Long getSumAmtByOldTxnseqno(String txnseqno_old);
+    
+    /**
+     * 更新退款订单状态为成功
+     * @param txnseqno
+     */
+    public void updateToSuccess(String txnseqno);
+    
+    /**
+     * 更新退款订单状态为失败
+     * @param txnseqno
+     */
+    public void updateToFailed(String txnseqno);
 }

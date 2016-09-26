@@ -108,7 +108,7 @@ public class ChanPayController {
 		orderBean.setIs_anonymous("Y");
 		orderBean.setBank_code(bankcode);
 		orderBean.setOut_trade_no((UUID.randomUUID().toString()).replace("-", ""));
-		orderBean.setPay_method("1");
+		orderBean.setPay_method("2");
 		orderBean.setPay_type("C,DC");
 		orderBean.setService("cjt_create_instant_trade");
 		orderBean.setTrade_amount(Money.valueOf(new BigDecimal(txnsLog.getAmount())).toYuan());
@@ -315,34 +315,23 @@ public class ChanPayController {
 	@RequestMapping("/reciveChanPay")
     @ResponseBody
     public String reciveChanPay(TradeAsyncResultBean tradeAsyncResultBean,HttpServletResponse response,HttpServletRequest request ) {
-	    try {
-	    	Map map = request.getParameterMap();
-	    	log.info("request data :" + JSON.toJSONString(map));
-			log.info("chanpay data :" + JSON.toJSONString(tradeAsyncResultBean));
-			ResultBean dealWithTradeAsync = chanPayAsyncService.dealWithTradeAsync(tradeAsyncResultBean);
-			if(dealWithTradeAsync.isResultBool()){
-				response.setContentType("text/html");
-				response.setCharacterEncoding("utf-8");
-				response.getWriter().print("success");
-				response.getWriter().flush();
-				response.getWriter().close();
-			}else{
-				
-			}
-			/*response.setContentType("text/html");
-			response.setCharacterEncoding("utf-8");
-			response.getWriter().print("success");
-			response.getWriter().flush();
-			response.getWriter().close();*/
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	    //try {
+    	Map map = request.getParameterMap();
+    	log.info("request data :" + JSON.toJSONString(map));
+		log.info("chanpay data :" + JSON.toJSONString(tradeAsyncResultBean));
+		ResultBean dealWithTradeAsync = null;
+		try {
+			dealWithTradeAsync = chanPayAsyncService.dealWithTradeAsync(tradeAsyncResultBean);
 		} catch (TradeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-   
-	    return "";
+		if(dealWithTradeAsync.isResultBool()){
+			return "success";
+		}else{
+			
+		}
+	    return "success";
     }
 	
 

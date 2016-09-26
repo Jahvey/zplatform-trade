@@ -400,7 +400,7 @@ public class TxnsQuickpayModel implements java.io.Serializable {
     }
 
     public TxnsQuickpayModel(TradeBean trade,MarginSmsBean marginSmsBean){
-        this.id=1L;
+        this.id=OrderNumber.getInstance().generateID();
         this.payorderno = marginSmsBean.getMerchantSeqId();
         this.payamt = 0L;
         this.paycommitime = marginSmsBean.getMerchantDate()+marginSmsBean.getMerchantTime();

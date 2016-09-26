@@ -41,10 +41,10 @@ import com.zlebank.zplatform.trade.bean.TradeBean;
 import com.zlebank.zplatform.trade.bean.enums.TradeTypeEnum;
 import com.zlebank.zplatform.trade.bean.gateway.AnonOrderAsynRespBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderAsynRespBean;
+import com.zlebank.zplatform.trade.cmbc.service.CMBCCrossLineQuickPayService;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.dao.RspmsgDAO;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
-import com.zlebank.zplatform.trade.insteadPay.message.BaseMessage;
 import com.zlebank.zplatform.trade.model.TxnsLogModel;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.model.TxnsWithholdingModel;
@@ -88,6 +88,9 @@ public class CMBCQuickReceiveProcessor implements ITradeReceiveProcessor{
     private RspmsgDAO rspmsgDAO;
     @Autowired
     private CoopInstiService coopInstiService;
+    @Autowired
+    private CMBCCrossLineQuickPayService cmbcCrossLineQuickPayService;
+    
     /**
      *
      * @param resultBean
@@ -103,11 +106,13 @@ public class CMBCQuickReceiveProcessor implements ITradeReceiveProcessor{
         }else if(tradeType==TradeTypeEnum.UNKNOW){//银行卡签约
            
         }else if(tradeType==TradeTypeEnum.ACCOUNTING){
-            dealWithSuccessTrade(tradeBean.getTxnseqno(),(TxnsWithholdingModel)resultBean.getResultObj());
+            //dealWithSuccessTrade(tradeBean.getTxnseqno(),(TxnsWithholdingModel)resultBean.getResultObj());
+        	cmbcCrossLineQuickPayService.dealWithAccounting(tradeBean.getTxnseqno(), resultBean);
         }
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @SuppressWarnings("unused")
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveCMBCTradeResult(ResultBean resultBean,TradeBean tradeBean){
             
             if(resultBean.isResultBool()){//交易成功
@@ -118,11 +123,7 @@ public class CMBCQuickReceiveProcessor implements ITradeReceiveProcessor{
                 txnsLogService.updatePayInfo_Fast(payPartyBean);
                 //更新交易流水中心应答信息
                 txnsLogService.updateCMBCWithholdingRetInfo(tradeBean.getTxnseqno(), withholding);
-                
-                
-                
                 String commiteTime = DateUtil.getCurrentDateTime();
-               
                 String merchOrderNo =  tradeBean.getOrderId();
                 // 处理同步通知和异步通知
                 // 根据原始订单拼接应答报文，异步通知商户
@@ -290,11 +291,12 @@ public class CMBCQuickReceiveProcessor implements ITradeReceiveProcessor{
         return orderAsyncRespBean;
     }
     
-    public AnonOrderAsynRespBean generateAsyncOrderResult(AnonOrderAsynRespBean orderAsyncRespBean,String privateKey) throws Exception{   
+    @SuppressWarnings("unused")
+	public AnonOrderAsynRespBean generateAsyncOrderResult(AnonOrderAsynRespBean orderAsyncRespBean,String privateKey) throws Exception{   
         String[] unParamstring = {"signature"};
         String dataMsg = ObjectDynamic.generateParamer(orderAsyncRespBean, false, unParamstring).trim();
         byte[] data =  URLEncoder.encode(dataMsg,"utf-8").getBytes();
-        //orderAsyncRespBean.setSignature(URLEncoder.encode(RSAUtils.sign(data, privateKey),"utf-8"));
+        //orderAsyncRespBean.setSignature(URLEncoder.encode(RSAUtils.sign(data, privateKey),"utf-8").getBytes());
         return orderAsyncRespBean;
     }
     
@@ -369,7 +371,8 @@ public class CMBCQuickReceiveProcessor implements ITradeReceiveProcessor{
     }
 
 	
-    private void responseData(AnonOrderAsynRespBean respBean, String coopInstCode,String merchNo,InsteadPayNotifyTask task) {
+    @SuppressWarnings("unchecked")
+	private void responseData(AnonOrderAsynRespBean respBean, String coopInstCode,String merchNo,InsteadPayNotifyTask task) {
         if (log.isDebugEnabled()) {
             log.debug("【入参responseData】"+JSONObject.fromObject(respBean));
         }

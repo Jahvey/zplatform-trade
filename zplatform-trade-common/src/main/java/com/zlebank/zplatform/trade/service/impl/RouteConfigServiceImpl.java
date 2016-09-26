@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.commons.utils.StringUtil;
-import com.zlebank.zplatform.member.pojo.PojoMember;
 import com.zlebank.zplatform.member.pojo.PojoMerchDeta;
 import com.zlebank.zplatform.member.service.CoopInstiService;
 import com.zlebank.zplatform.member.service.MemberService;
@@ -34,9 +33,7 @@ import com.zlebank.zplatform.member.service.MerchService;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.dao.IRouteConfigDAO;
 import com.zlebank.zplatform.trade.exception.TradeException;
-import com.zlebank.zplatform.trade.model.MemberBaseModel;
 import com.zlebank.zplatform.trade.model.RouteConfigModel;
-import com.zlebank.zplatform.trade.service.IMemberService;
 import com.zlebank.zplatform.trade.service.IRouteConfigService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 
@@ -71,7 +68,7 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
     }
     
     
-    
+    @Deprecated
     public ResultBean getTransRout(String transTime,String transAmt,String memberId,String busiCode,String cardNo,String cashCode){
         try {
         	String merchRoutver = null;
@@ -172,7 +169,7 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
         log.info("member "+memberId+" no find member rout!!!");
         return new ResultBean("RC99", "交易路由异常");
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(readOnly=true)
     public Map<String, Object> getCardInfo(String cardNo){
         StringBuffer sqlBuffer = new StringBuffer();
         sqlBuffer.append("SELECT type,bankcode,bankname ");
@@ -190,7 +187,32 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
         }
         return null;
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    
+    public Map<String, Object> getCardPBCCode(String cardNo){
+    	
+    	Map<String, Object> cardMap = getCardInfo(cardNo);
+    	if(cardMap==null){
+    		return null;
+    	}
+    	String sql = "select t.pbc_bankcode,t.bankname from t_bank_insti t where t.bankcode= ? and status = ?";
+    	List<Map<String, Object>> valueList = (List<Map<String, Object>>) super.queryBySQL(sql, new Object[]{cardMap.get("BANKCODE"),"1"});
+    	if(valueList.size()>0){
+    		return valueList.get(0);
+    	}
+    	return null;
+    }
+    
+    
+    public String getBankName(String bankCode){
+    	String sql = "select bank_name from t_bank_info  where bank_node = ?";
+    	List<Map<String, Object>> valueList = (List<Map<String, Object>>) super.queryBySQL(sql, new Object[]{bankCode});
+    	if(valueList.size()>0){
+    		return valueList.get(0).get("BANK_NAME").toString();
+    	}
+		return null;
+    }
+    
+    @Transactional(readOnly=true)
     public String getDefaultVerInfo(String instiCode,String busicode,int verType) throws TradeException{
     	List<Map<String, Object>> resultList = (List<Map<String, Object>>) super.queryBySQL("select COOP_INSTI_CODE,BUSI_CODE,VER_TYPE,VER_VALUE from T_NONMER_DEFAULT_CONFIG where COOP_INSTI_CODE=? and BUSI_CODE=? and VER_TYPE=?", new Object[]{instiCode,busicode,verType+""});
     	if(resultList.size()>0){
@@ -200,25 +222,28 @@ public class RouteConfigServiceImpl extends BaseServiceImpl<RouteConfigModel, Lo
     	throw new TradeException("GW03");
 		//return null;
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(readOnly=true)
     public ResultBean getWapTransRout(String transTime,String transAmt,String memberId,String busiCode,String cardNo){
         try {
         	String merchRoutver = null;
-        	if(memberId.startsWith("3")){//合作机构
-        		merchRoutver = getDefaultVerInfo(memberId,busiCode,20);
-        	}else{//商户
-        		PojoMerchDeta merch = merchService.getMerchBymemberId(memberId);
-        		merchRoutver = merch.getRoutVer();
+        	if(StringUtil.isNotEmpty(memberId)){
+        		if(memberId.startsWith("3")){//合作机构
+            		merchRoutver = getDefaultVerInfo(memberId,busiCode,20);
+            	}else{//商户
+            		PojoMerchDeta merch = merchService.getMerchBymemberId(memberId);
+            		merchRoutver = merch.getRoutVer();
+            	}
         	}
+        	
             
-            if (log.isDebugEnabled()) {
-                log.debug("transTime：" + transTime);
-                log.debug("transAmt：" + transAmt);
-                log.debug("memberId：" + memberId);
-                log.debug("busiCode：" + busiCode);
-                log.debug("cardNo：" + cardNo);
-                log.debug("merchRoutver：" + merchRoutver);
-            }
+           
+                log.info("transTime：" + transTime);
+                log.info("transAmt：" + transAmt);
+                log.info("memberId：" + memberId);
+                log.info("busiCode：" + busiCode);
+                log.info("cardNo：" + cardNo);
+                log.info("merchRoutver：" + merchRoutver);
+           
             String bankcode = null;
             String cardType = null;
             if(StringUtils.isNotEmpty(cardNo)){

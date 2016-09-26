@@ -15,6 +15,7 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.commons.dao.impl.HibernateBaseDAOImpl;
 import com.zlebank.zplatform.trade.dao.ITxnsWithdrawDAO;
@@ -31,6 +32,7 @@ import com.zlebank.zplatform.trade.model.TxnsWithdrawModel;
 @Repository("txnsWithdrawDAO")
 public class TxnsWithdrawDAOImpl extends HibernateBaseDAOImpl<TxnsWithdrawModel> implements ITxnsWithdrawDAO{
 
+	@Transactional
     public Session getSession(){
         return super.getSession();
     }
@@ -39,8 +41,9 @@ public class TxnsWithdrawDAOImpl extends HibernateBaseDAOImpl<TxnsWithdrawModel>
      * @param seqNo
      * @return
      */
+    @Transactional(readOnly=true)
     public TxnsWithdrawModel getWithdrawBySeqNo(String seqNo){
-        Criteria cri=getSession().createCriteria(TxnsWithdrawModel.class);
+        Criteria cri=super.getSession().createCriteria(TxnsWithdrawModel.class);
         cri.add(Restrictions.eq("texnseqno", seqNo));
         return (TxnsWithdrawModel) cri.uniqueResult();
     }

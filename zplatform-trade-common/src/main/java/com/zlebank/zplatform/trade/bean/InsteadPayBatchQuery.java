@@ -37,8 +37,17 @@ public class InsteadPayBatchQuery implements Bean{
     private String status;
     /** 状态列表 **/
     private List<String> statusList;
+    private String orderNo;
     
-    public Long getId() {
+    
+    
+    public String getOrderNo() {
+		return orderNo;
+	}
+	public void setOrderNo(String orderNo) {
+		this.orderNo = orderNo;
+	}
+	public Long getId() {
 		return id;
 	}
 	public void setId(Long id) {

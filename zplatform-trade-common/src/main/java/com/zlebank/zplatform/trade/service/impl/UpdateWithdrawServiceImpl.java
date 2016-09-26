@@ -25,6 +25,7 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -51,7 +52,7 @@ import com.zlebank.zplatform.trade.service.UpdateWithdrawService;
  * @date 2016年3月21日 下午4:39:36
  * @since 
  */
-@Service(value="UpdateWithdrawServiceImpl")
+@Service("updateWithdrawServiceImpl")
 public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSubject,ApplicationListener<ContextRefreshedEvent>{
 
     private static final Log log = LogFactory.getLog(UpdateWithdrawServiceImpl.class);
@@ -89,6 +90,7 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
         BusinessEnum businessEnum = null;
         
         EntryEvent entryEvent = null;
+        TradeInfo tradeInfo=new TradeInfo();
         if("00".equals(data.getResultCode())){
         	businessEnum = BusinessEnum.WITHDRAWALS;
         	orderinfo.setStatus("00");
@@ -112,6 +114,12 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
         	orderinfo.setStatus("03");
         	entryEvent = EntryEvent.TRADE_FAIL;
         	withdrawModel.setStatus(WithdrawEnum.BATCHFAILURE.getCode());
+        }else if("04".equals(data.getResultCode())){
+        	businessEnum = BusinessEnum.WITHDRAWALS;
+        	orderinfo.setStatus("03");
+        	entryEvent = EntryEvent.REFUND_EXCHANGE;
+        	withdrawModel.setStatus(WithdrawEnum.BATCHFAILURE.getCode());
+        	tradeInfo.setChannelFee(data.getChannelFee());
         }
         
         withdrawModel.setTxntime(DateUtil.getCurrentDateTime());
@@ -124,7 +132,6 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
         TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(data.getTxnSeqNo());
         //更新订单信息
         txnsOrderinfoDAO.update(orderinfo);
-        TradeInfo tradeInfo=new TradeInfo();
         tradeInfo.setPayMemberId(withdrawModel.getMemberid());
         tradeInfo.setAmount(new BigDecimal(withdrawModel.getAmount()));
         tradeInfo.setCharge(new BigDecimal(withdrawModel.getFee()));
@@ -136,10 +143,20 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
         	log.info("提现账务数据："+JSON.toJSONString(tradeInfo));
         	txnsLog.setAppordcommitime(DateUtil.getCurrentDateTime());
         	txnsLog.setAppinst("000000000000");
-        	
             accEntryService.accEntryProcess(tradeInfo,entryEvent);
+            if ("00".equals(data.getResultCode())) {
+            	tradeInfo.setChannelFee(new BigDecimal(0));
+            	accEntryService.accEntryProcess(tradeInfo, EntryEvent.RECON_SUCCESS);
+            }
             txnsLog.setApporderstatus("00");
-            txnsLog.setApporderinfo("提现账务处理成功");
+            if("04".equals(data.getResultCode())){
+            	txnsLog.setApporderinfo("提现账务处理成功（退汇）");
+            }else if("03".equals(data.getResultCode())){
+            	txnsLog.setApporderinfo("提现账务处理成功（交易失败）");
+            }else{
+            	txnsLog.setApporderinfo("提现账务处理成功");
+            }
+            
         } catch (AccBussinessException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -155,6 +172,20 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
 			e1.printStackTrace();
 			txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
             txnsLog.setApporderinfo(e1.getMessage());
+		} catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
+		}catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
 		}
         //更新交易流水应用方信息
         txnsLogService.updateAppStatus(data.getTxnSeqNo(), txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
@@ -162,7 +193,7 @@ public class UpdateWithdrawServiceImpl implements UpdateWithdrawService,UpdateSu
         txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
         txnsLog.setAccbusicode(BusinessEnum.WITHDRAWALS.getBusiCode());
         txnsLogService.update(txnsLog);
-        log.info("提现交易账务处理开始，交易序列号:"+data.getTxnSeqNo());
+        log.info("提现交易账务处理结束，交易序列号:"+data.getTxnSeqNo());
     }
 
     /**

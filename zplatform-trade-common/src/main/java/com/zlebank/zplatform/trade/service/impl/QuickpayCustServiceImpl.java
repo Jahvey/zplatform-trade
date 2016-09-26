@@ -89,7 +89,7 @@ public class QuickpayCustServiceImpl extends BaseServiceImpl<QuickpayCustModel, 
         if(StringUtil.isEmpty(trade.getBindCardId())){
             return null;
         }
-        List<QuickpayCustModel> custList =  (List<QuickpayCustModel>) super.queryByHQL("from QuickpayCustModel where relatememberno=? and cardno = ? and institution = ?", new Object[]{trade.getMerUserId(),trade.getCardNo(),trade.getPayinstiId()});
+        List<QuickpayCustModel> custList =  (List<QuickpayCustModel>) super.queryByHQL("from QuickpayCustModel where relatememberno=? and cardno = ?", new Object[]{trade.getMerUserId(),trade.getCardNo()});
         if(custList.size()>0){
             
         }else{//没有保存卡信息
@@ -167,7 +167,7 @@ public class QuickpayCustServiceImpl extends BaseServiceImpl<QuickpayCustModel, 
      * @return
      */
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(readOnly=true)
     public QuickpayCustModel getCardByBindId(String bindId) {
         List<QuickpayCustModel> bindCardList = (List<QuickpayCustModel>) super.queryByHQL(" from QuickpayCustModel where id=? and status <> ?", new Object[]{Long.valueOf(bindId),"02"});
         if(bindCardList.size()>0){
@@ -175,7 +175,7 @@ public class QuickpayCustServiceImpl extends BaseServiceImpl<QuickpayCustModel, 
         }
         return null;
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(readOnly=true)
     public void updateCardStatus(String memberId,String cardNo){
         List<QuickpayCustModel> bindCardList = (List<QuickpayCustModel>) super.queryByHQL(" from QuickpayCustModel where relatememberno=? and cardno = ? and status = ?", new Object[]{memberId,cardNo,"01"});
         if(bindCardList.size()>0){
@@ -241,7 +241,7 @@ public class QuickpayCustServiceImpl extends BaseServiceImpl<QuickpayCustModel, 
     @Transactional
     public void updateBindCardId(Long id,String bindCardId){
         if(StringUtil.isEmpty(bindCardId)){
-            super.delete(super.get(id));
+            //super.delete(super.get(id));
         }else{
             super.updateByHQL("update QuickpayCustModel set bindcardid = ? where id = ?", new Object[]{bindCardId,id});
         }
@@ -256,9 +256,31 @@ public class QuickpayCustServiceImpl extends BaseServiceImpl<QuickpayCustModel, 
     public void deleteCard(Long id) {
         QuickpayCustModel card = super.get(id);
         if(StringUtil.isEmpty(card.getBindcardid())){
-            super.delete(card);
+            //super.delete(card);
         }
         
     }
+	@Override
+	@Transactional
+	public List<QuickpayCustModel> getCardList(String cardNo, String accName,
+			String phone, String cerId, String memberId) {
+		 List<QuickpayCustModel> cardList = (List<QuickpayCustModel>) super.queryByHQL("from QuickpayCustModel where cardno=? and accname = ? and phone = ? and idnum = ? and relatememberno = ? and status = ?", new Object[]{cardNo,accName,phone,cerId,memberId,"00"});
+		return cardList;
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void deleteUnBindCard(Long id){
+		QuickpayCustModel card = super.get(id);
+        if(card!=null){
+            super.delete(card);
+        }
+	}
+	@Override
+	@Transactional
+	public List<QuickpayCustModel> getCardList(String cardNo, String accName,
+			String phone, String cerId, String memberId, String devId) {
+		 List<QuickpayCustModel> cardList = (List<QuickpayCustModel>) super.queryByHQL("from QuickpayCustModel where cardno=? and accname = ? and phone = ? and idnum = ? and relatememberno = ? and devId=?  and  status = ?", new Object[]{cardNo,accName,phone,cerId,memberId,devId,"00"});
+			return cardList;
+	}
 
 }

@@ -11,12 +11,14 @@
 package com.zlebank.zplatform.trade.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.trade.bean.enums.SeqNoEnum;
+import com.zlebank.zplatform.trade.bean.enums.TradeSequenceEmum;
 import com.zlebank.zplatform.trade.dao.ConfigInfoDAO;
 import com.zlebank.zplatform.trade.service.SeqNoService;
 
@@ -31,8 +33,12 @@ import com.zlebank.zplatform.trade.service.SeqNoService;
 @Service
 public class SeqNoServiceImpl  implements SeqNoService{
 
+	private static final String NAMESPACE="SEQ:";
     @Autowired
-    ConfigInfoDAO configInfoDAO;
+    private ConfigInfoDAO configInfoDAO;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+    
     /**
      * 生成指定的序列号
      * @param type
@@ -77,6 +83,11 @@ public class SeqNoServiceImpl  implements SeqNoService{
                 break;
         }
         return rtnNo;
+    }
+    
+    public Long getSeqNumber(TradeSequenceEmum tradeSequenceEmum){
+    	
+    	return redisTemplate.opsForValue().increment(NAMESPACE+tradeSequenceEmum.getName(), 1);
     }
 
 }

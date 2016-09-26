@@ -35,6 +35,7 @@ import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.service.IQuickpayCustService;
 import com.zlebank.zplatform.trade.service.ITradeReceiveProcessor;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
+import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
 import com.zlebank.zplatform.trade.utils.ObjectDynamic;
@@ -59,6 +60,8 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
     private ITxnsOrderinfoDAO txnsOrderinfoDAO;
     @Autowired
     private MerchMKService merchMKService;
+    @Autowired
+    private TradeNotifyService tradeNotifyService;
     /**
      *
      * @param resultBean
@@ -91,6 +94,8 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
             }
             //String txnseqno, String paytype, String payordno, String payinst, String payfirmerno, String paysecmerno, String payordcomtime, String payordfintime, String cardNo, String rout, String routlvl
             PayPartyBean payPartyBean = new PayPartyBean(tradeBean.getTxnseqno(),"01", tradeBean.getOrderId(), "95000001", ConsUtil.getInstance().cons.getReapay_quickpay_merchant_id(), "", DateUtil.getCurrentDateTime(), "",tradeBean.getCardNo());
+            payPartyBean.setPayrettsnseqno("TEST"+DateUtil.getCurrentDateTime());
+            payPartyBean.setPanName(tradeBean.getAcctName());
             txnsLogService.updatePayInfo_Fast(payPartyBean);
             txnsLogService.updateReaPayRetInfo(tradeBean.getTxnseqno(), payResult);
             
@@ -106,7 +111,7 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
             // 应用方信息
             AppPartyBean appParty = new AppPartyBean("",
                     "000000000000", commiteTime,
-                    DateUtil.getCurrentDateTime(), tradeBean.getTxnseqno(), "AC000000");
+                    DateUtil.getCurrentDateTime(), tradeBean.getTxnseqno(), "");
             txnsLogService.updateAppInfo(appParty);
             try {
                 IAccounting accounting = AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.fromValue(txnsLogService.getTxnsLogByTxnseqno(tradeBean.getTxnseqno()).getBusitype()));
@@ -114,7 +119,7 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            
+            tradeNotifyService.notify(tradeBean.getTxnseqno());
             
             
             /*ResultBean orderResp = 
@@ -129,7 +134,7 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
     
     @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
     public void saveSuccessReaPayTrade(String txnseqno,String gateWayOrderNo,ReaPayResultBean payResultBean,String merchId){
-        TxnsLogModel txnsLog = txnsLogService.get(txnseqno);
+        TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
         //txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
         txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
         txnsLog.setRetcode("0000");
@@ -143,13 +148,13 @@ public class TestReceiveProcessor implements ITradeReceiveProcessor{
         txnsLog.setPayrettsnseqno(payResultBean.getTrade_no());
         txnsLog.setPayretcode(payResultBean.getResult_code());
         txnsLog.setPayretinfo(payResultBean.getResult_msg());
-        txnsLogService.update(txnsLog);
+        txnsLogService.updateTxnsLog(txnsLog);
         
         
         TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderinfoByOrderNo(gateWayOrderNo,merchId);
         orderinfo.setStatus("00");
         orderinfo.setOrderfinshtime(DateUtil.getCurrentDateTime());
-        txnsOrderinfoDAO.update(orderinfo);
+        txnsOrderinfoDAO.updateOrderinfo(orderinfo);
         
     }
     @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)

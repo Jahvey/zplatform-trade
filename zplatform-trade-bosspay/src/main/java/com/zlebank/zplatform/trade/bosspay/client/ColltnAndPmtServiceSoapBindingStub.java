@@ -8,9 +8,14 @@
 package com.zlebank.zplatform.trade.bosspay.client;
 
 public class ColltnAndPmtServiceSoapBindingStub extends org.apache.axis.client.Stub implements com.zlebank.zplatform.trade.bosspay.service.ColltnAndPmtService {
-    private java.util.Vector cachedSerClasses = new java.util.Vector();
+	
+    @SuppressWarnings({ "rawtypes", "unused" })
+	private java.util.Vector cachedSerClasses = new java.util.Vector();
+    @SuppressWarnings({ "rawtypes", "unused" })
     private java.util.Vector cachedSerQNames = new java.util.Vector();
+    @SuppressWarnings({ "rawtypes", "unused" })
     private java.util.Vector cachedSerFactories = new java.util.Vector();
+    @SuppressWarnings({ "rawtypes", "unused" })
     private java.util.Vector cachedDeserFactories = new java.util.Vector();
 
     static org.apache.axis.description.OperationDesc [] _operations;
@@ -152,7 +157,8 @@ public class ColltnAndPmtServiceSoapBindingStub extends org.apache.axis.client.S
             if (super.cachedPortName != null) {
                 _call.setPortName(super.cachedPortName);
             }
-            java.util.Enumeration keys = super.cachedProperties.keys();
+            @SuppressWarnings("rawtypes")
+			java.util.Enumeration keys = super.cachedProperties.keys();
             while (keys.hasMoreElements()) {
                 java.lang.String key = (java.lang.String) keys.nextElement();
                 _call.setProperty(key, super.cachedProperties.get(key));

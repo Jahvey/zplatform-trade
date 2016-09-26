@@ -1,9 +1,14 @@
 package org.zplatform.cmbc;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.trade.dao.TransferBatchDAO;
 
 public class TransferBatchTest {
@@ -33,4 +38,20 @@ public class TransferBatchTest {
         }*/
          
     }
+    
+    
+    public static void main(String[] args) {
+   	 SimpleDateFormat sdf = new SimpleDateFormat(DateUtil.SIMPLE_DATE_FROMAT);
+   	 Date date;
+		try {
+			date = DateUtil.convertToDate("2016-07-04", DateUtil.DEFAULT_TIME_STAMP_FROMAT);
+			 String str= sdf.format(date);
+	         System.out.println(str);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+      
+        
+	}
 }

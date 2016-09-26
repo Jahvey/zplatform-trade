@@ -10,6 +10,8 @@
  */
 package com.zlebank.zplatform.trade.insteadPay.message;
 
+import java.io.Serializable;
+
 import com.zlebank.zplatform.commons.validator.Scontant;
 import com.zlebank.zplatform.trade.common.validator.An;
 import com.zlebank.zplatform.trade.common.validator.Ans;
@@ -23,7 +25,7 @@ import com.zlebank.zplatform.trade.common.validator.N;
  * @date 2015年11月24日 下午3:02:08
  * @since 
  */
-public class InsteadPayFile {
+public class InsteadPayFile implements Serializable{
     /**商户代码**/
     @N(max=15)
     private String merId;

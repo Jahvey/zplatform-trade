@@ -33,7 +33,15 @@ public class WapCardBean implements Serializable{
     private String phoneNo;
     private String cvn2;
     private String expired;
-    /**
+    private String tn ;
+    
+    public String getTn() {
+		return tn;
+	}
+	public void setTn(String tn) {
+		this.tn = tn;
+	}
+	/**
      * @return the cardNo
      */
     public String getCardNo() {

@@ -26,8 +26,6 @@ import com.zlebank.zplatform.trade.bosspay.bean.BtchcolltnRequestBean;
 import com.zlebank.zplatform.trade.bosspay.bean.BtchpmtItemBean;
 import com.zlebank.zplatform.trade.bosspay.bean.BtchpmtRequestBean;
 import com.zlebank.zplatform.trade.bosspay.service.BossPayService;
-import com.zlebank.zplatform.trade.service.InsteadPayService;
-import com.zlebank.zplatform.trade.service.impl.NotifyInsteadURLServiceImpl;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
 

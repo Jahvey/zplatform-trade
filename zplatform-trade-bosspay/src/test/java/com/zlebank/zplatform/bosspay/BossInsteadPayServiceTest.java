@@ -11,17 +11,18 @@
 package com.zlebank.zplatform.bosspay;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.zlebank.zplatform.trade.adapter.insteadpay.IInsteadPayTrade;
+import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.trade.bosspay.bean.BtchpmtResultBean;
 import com.zlebank.zplatform.trade.bosspay.insteadpay.BossPayInsteadPayThreadPool;
 import com.zlebank.zplatform.trade.bosspay.service.BossInsteadPayService;
@@ -68,5 +69,11 @@ public class BossInsteadPayServiceTest {
         resultList.add(itemBean);
         resultList.add(itemBean2);
 		bossInsteadPayService.dealWithResult("123456789", resultList);
+	}
+	
+	public static void main(String[] args) {
+		Map<String, Object> value = new HashMap<String, Object>();
+		Long channelFee = Long.valueOf(StringUtil.isEmpty(value.get("CFEE")+"")?"0":value.get("CFEE")+"")+Long.valueOf(StringUtil.isEmpty(value.get("DFEE")+"")?"0":value.get("DFEE")+"");
+		System.out.println(channelFee);
 	}
 }

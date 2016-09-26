@@ -35,4 +35,6 @@ public interface MerchWhiteListService {
      * @return 错误代码，如果没有错误则返回NULL
      */
     public String checkMerchWhiteList(String merId, String accName, String accNo) ;
+    
+    
 }

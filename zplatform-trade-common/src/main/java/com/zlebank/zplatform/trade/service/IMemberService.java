@@ -28,6 +28,7 @@ public interface IMemberService extends IBaseService<MemberBaseModel, String>{
      * @param subMerchId
      * @return
      */
+	@Deprecated
     public ResultBean verifySubMerch(String merchId,String subMerchId);
     
     /**
@@ -35,5 +36,6 @@ public interface IMemberService extends IBaseService<MemberBaseModel, String>{
      * @param memberId
      * @return
      */
+	@Deprecated
     public MemberBaseModel getMemberByMemberId(String memberId);
 }

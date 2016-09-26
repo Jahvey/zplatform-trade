@@ -47,13 +47,10 @@ public class CJG20001Test {
 	@Test
 	public void sendMessage() {
 		G20001Bean data = new G20001Bean();
-		data.setMertid("5ee26ddb404a590");
+		data.setMertid("cp2016011227674");
 		data.setQryReqSn("35003d8078d1404fbbd5f67456ed9eeb");
 		data.setSummary("测试DEMO");
 		data.setPostscript("测试DEMO");
-		
-		data.setReqSn(U.createUUID());
-		
 		data.setReqSn(U.createUUID());
 		buildCjmsgAndSend(data);
 	}//method

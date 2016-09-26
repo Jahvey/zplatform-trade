@@ -10,6 +10,8 @@
  */
 package com.zlebank.zplatform.trade.insteadPay.message;
 
+import java.io.Serializable;
+
 import com.zlebank.zplatform.trade.common.validator.Ans;
 import com.zlebank.zplatform.trade.common.validator.N;
 
@@ -21,7 +23,7 @@ import com.zlebank.zplatform.trade.common.validator.N;
  * @date 2015年11月24日 下午4:45:13
  * @since 
  */
-public class RealnameAuthFile {
+public class RealnameAuthFile implements Serializable{
 
     /**银行卡号**/
     @N(max=20)

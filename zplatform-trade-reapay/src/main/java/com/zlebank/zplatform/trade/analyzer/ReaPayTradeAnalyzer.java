@@ -275,7 +275,7 @@ public static CreditBean generateTestCreditBean(TradeBean trade){
        String body = StringUtil.isEmpty(trade.getGoodsDesc())?"no body":trade.getGoodsDesc();
        String terminal_type = "mobile";// 终端类型
        String terminal_info = "djddh"; // 终端标识
-       String member_ip = StringUtil.isEmpty(trade.getMemberIP())?"0.0.0.0":trade.getMemberIP();// 用户IP
+       String member_ip = StringUtil.isEmpty(trade.getMemberIP())?"0.0.0.0":"0.0.0.0";// 用户IP
        String seller_email = ConsUtil.getInstance().cons.getReapay_quickpay_seller_email();
        String notify_url = ConsUtil.getInstance().cons.getReapay_quickpay_notify_url();
        String token_id = UUIDUtil.uuid();

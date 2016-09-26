@@ -17,7 +17,6 @@ import com.zlebank.zplatform.trade.bean.zlpay.OfflineDepositNotifyBean;
 import com.zlebank.zplatform.trade.bean.zlpay.OnlineDepositShortBean;
 import com.zlebank.zplatform.trade.bean.zlpay.QuerytranstatusBean;
 import com.zlebank.zplatform.trade.bean.zlpay.WithdrawNotifyBean;
-import com.zlebank.zplatform.trade.service.ITradeService;
 
 /**
  * Class Description

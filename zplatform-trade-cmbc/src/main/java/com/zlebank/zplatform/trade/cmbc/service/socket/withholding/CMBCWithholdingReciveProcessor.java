@@ -187,6 +187,7 @@ public class CMBCWithholdingReciveProcessor implements ReceiveProcessor{
                     log.info("receive msg:"+JSON.toJSONString(realTimeWithholdingResultBean));
                     verifyFlag = verifyMsg(ConsUtil.getInstance().cons.getCmbc_withholding_private_key(), ConsUtil.getInstance().cons.getCmbc_withholding_public_key(), msg, sign);
                     log.info("verify result"+verifyFlag);
+                   
                     if(verifyFlag){
                         //更新交易流水
                         TxnsWithholdingModel withholding = txnsWithholdingService.getWithholdingBySerialNo(realTimeWithholdingResultBean.getReqserialno());
@@ -325,14 +326,14 @@ public class CMBCWithholdingReciveProcessor implements ReceiveProcessor{
     public void saveFailedCMBCTrade(TxnsWithholdingModel withholding){
         TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(withholding.getTxnseqno());
         txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
-        PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CMBCWITHHOLDING, withholding.getExeccode());
+       /* PojoRspmsg msg = rspmsgDAO.getRspmsgByChnlCode(ChnlTypeEnum.CMBCWITHHOLDING, withholding.getExeccode());
         if(msg!=null){
             txnsLog.setRetcode(msg.getWebrspcode());
             txnsLog.setRetinfo(msg.getRspinfo());
         }else{
             txnsLog.setRetcode("0052");
             txnsLog.setRetinfo("交易失败，系统忙，请稍后再试！");
-        }
+        }*/
         txnsLog.setRetdatetime(DateUtil.getCurrentDateTime());
         txnsLog.setTradestatflag("00000001");
         txnsLog.setTradetxnflag("10000000");

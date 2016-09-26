@@ -52,6 +52,7 @@ import com.zlebank.zplatform.trade.model.ConfigInfoModel;
 import com.zlebank.zplatform.trade.model.PojoInsteadPayBatch;
 import com.zlebank.zplatform.trade.service.InsteadPayService;
 import com.zlebank.zplatform.trade.service.NotifyInsteadURLService;
+import com.zlebank.zplatform.trade.utils.SpringContext;
 
 /**
  * 代付URL通知类
@@ -78,7 +79,7 @@ public class NotifyInsteadURLServiceImpl implements NotifyInsteadURLService,  Ap
     @Autowired
     private CoopInstiService coopInstiService;
 
-    @Autowired
+    //@Autowired
     private InsteadPayService insteadPayService;
     
     @Autowired
@@ -103,55 +104,54 @@ public class NotifyInsteadURLServiceImpl implements NotifyInsteadURLService,  Ap
     @Override
     @Transactional
     public void addInsteadPayTask(Long batchId) {
-        
-        PojoInsteadPayBatch batch = insteadPayBatchDAO.getByBatchId(batchId);
-        System.out.println(batch.getBatchNo());
-        // 请求报文
-        InsteadPayQuery_Request requestBean = new InsteadPayQuery_Request();
-        requestBean.setBatchNo(String.valueOf(batch.getBatchNo()));
-        requestBean.setTxnTime(batch.getTxnTime());
-        requestBean.setMerId(batch.getMerId());
-        PojoMember memberMerch = memberService.getMbmberByMemberId(batch.getMerId(), MemberType.ENTERPRISE);
-        CoopInsti insti = coopInstiService.getInstiByInstiID(memberMerch.getInstiId());
-        requestBean.setCoopInstiId(insti.getInstiCode()); // 合作机构
-        requestBean.setVersion("1.0");
-        requestBean.setTxnType("25");
-        requestBean.setTxnSubType("01");
-        requestBean.setEncoding("1");
-        requestBean.setBizType("000205");
-        requestBean.setChannelType("00");
-        
-        // 响应报文
-        InsteadPayQuery_Response responseBean = BeanCopyUtil.copyBean(InsteadPayQuery_Response.class, requestBean);
-        // 代付查询
-        insteadPayService.insteadPayQuery(requestBean, responseBean);
-//        String data = responseData(responseBean);
-        
-        // 如果URL合法，则发送通知，否则不通知。
-        if (StringUtil.isEmpty(batch.getNotifyUrl()) || RegExpValidatorUtil.IsUrl(batch.getNotifyUrl())) {
-            // 添加一个代付任务
-            InsteadPayNotifyTask task = new InsteadPayNotifyTask();
-            // 组织报文 TODO: 旧版本兼容
-            List<ConfigInfoModel> configList = configInfoDAO.getConfigListByParaName("INSTEAD_PAY_NOTIFY_MER_NO_V1");
-            boolean isOld = false;
-            for (ConfigInfoModel model : configList) {
-                if (requestBean.getMerId().equals(model.getPara())) {
-                    isOld = true;
-                }
-            }
-            if (isOld) {
-                // 旧版本异步通知
-                responseData_V1(responseBean, task);
-            } else {
-                // 新版本异步通知
-                responseData(responseBean,task);    
-            }
-            
-            task.setUrl(batch.getNotifyUrl());
-            taskQueue.add(task);
-        } else {
-            log.warn("URL为空或非法URL，无法执行通知任务。InsteadPayBatchSeqNo->"+batch.getInsteadPayBatchSeqNo());
-        }
+        	 PojoInsteadPayBatch batch = insteadPayBatchDAO.getByBatchId(batchId);
+              log.info("代付任务："+batch.getBatchNo());
+             // 请求报文
+             InsteadPayQuery_Request requestBean = new InsteadPayQuery_Request();
+             requestBean.setBatchNo(String.valueOf(batch.getBatchNo()));
+             requestBean.setTxnTime(batch.getTxnTime());
+             requestBean.setMerId(batch.getMerId());
+             PojoMember memberMerch = memberService.getMbmberByMemberId(batch.getMerId(), MemberType.ENTERPRISE);
+             CoopInsti insti = coopInstiService.getInstiByInstiID(memberMerch.getInstiId());
+             requestBean.setCoopInstiId(insti.getInstiCode()); // 合作机构
+             requestBean.setVersion("1.0");
+             requestBean.setTxnType("25");
+             requestBean.setTxnSubType("01");
+             requestBean.setEncoding("1");
+             requestBean.setBizType("000205");
+             requestBean.setChannelType("00");
+             
+             // 响应报文
+             InsteadPayQuery_Response responseBean = BeanCopyUtil.copyBean(InsteadPayQuery_Response.class, requestBean);
+             // 代付查询
+             insteadPayService.insteadPayQuery(requestBean, responseBean);
+//             String data = responseData(responseBean);
+             
+             // 如果URL合法，则发送通知，否则不通知。
+             if (StringUtil.isEmpty(batch.getNotifyUrl()) || RegExpValidatorUtil.IsUrl(batch.getNotifyUrl())) {
+                 // 添加一个代付任务
+                 InsteadPayNotifyTask task = new InsteadPayNotifyTask();
+                 // 组织报文 TODO: 旧版本兼容
+                 List<ConfigInfoModel> configList = configInfoDAO.getConfigListByParaName("INSTEAD_PAY_NOTIFY_MER_NO_V1");
+                 boolean isOld = false;
+                 for (ConfigInfoModel model : configList) {
+                     if (requestBean.getMerId().equals(model.getPara())) {
+                         isOld = true;
+                     }
+                 }
+                 if (isOld) {
+                     // 旧版本异步通知
+                     responseData_V1(responseBean, task);
+                 } else {
+                     // 新版本异步通知
+                     responseData(responseBean,task);    
+                 }
+                 
+                 task.setUrl(batch.getNotifyUrl());
+                 taskQueue.add(task);
+             } else {
+                 log.warn("URL为空或非法URL，无法执行通知任务。InsteadPayBatchSeqNo->"+batch.getInsteadPayBatchSeqNo());
+             }
 
     }
     

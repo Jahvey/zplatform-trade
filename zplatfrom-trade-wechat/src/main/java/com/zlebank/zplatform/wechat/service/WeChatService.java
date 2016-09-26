@@ -11,9 +11,12 @@
 package com.zlebank.zplatform.wechat.service;
 
 import java.util.List;
+import java.util.Map;
 
 import net.sf.json.JSONObject;
 
+import com.zlebank.zplatform.trade.bean.ResultBean;
+import com.zlebank.zplatform.trade.bean.TradeBean;
 import com.zlebank.zplatform.wechat.wx.bean.PayResultBean;
 import com.zlebank.zplatform.wechat.wx.bean.QueryBillBean;
 
@@ -46,4 +49,37 @@ public interface WeChatService {
 	 * @return
 	 */
 	public List<String[]> dowanWeChatBill(QueryBillBean queryBillBean );
+	
+	/***
+	 * 退款查询定时任务跑批
+	 */
+	public void dealRefundBatch();
+	/**
+	 *订单查询跑批
+	 *将已支付，
+	 *但没收到异步通知的订单进行主动请求 
+	 */
+	public void dealAnsyOrder();
+	
+	/***
+	 * 查询微信订单
+	 * @param map
+	 * @return
+	 */
+	public ResultBean queryWechatOrder(TradeBean trade);
+	
+	/**
+	 * 查询微信交易订单和退款订单结果
+	 * @param txnseqno
+	 * @return
+	 */
+	public ResultBean queryOrder(String txnseqno);
+	
+	/**
+	 * 处理交易查询后账务数据
+	 * @param txnseqno
+	 * @param resultBean
+	 * @return
+	 */
+	public ResultBean dealWithAccounting(String txnseqno,ResultBean resultBean);
 }

@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.SQLQuery;
+import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.type.StandardBasicTypes;
 import org.springframework.stereotype.Repository;
@@ -64,5 +65,9 @@ public class ConfigInfoDAOImpl extends HibernateBaseDAOImpl<ConfigInfoModel> imp
         Criteria crite= this.getSession().createCriteria(ConfigInfoModel.class);
         crite.add(Restrictions.eq("paraname", paraName));
         return crite.list();
+    }
+    
+    public Session getSession(){
+    	return super.getSession();
     }
 }

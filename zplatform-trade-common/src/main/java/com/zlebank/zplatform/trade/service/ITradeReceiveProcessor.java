@@ -23,6 +23,17 @@ import com.zlebank.zplatform.trade.bean.enums.TradeTypeEnum;
  * @since 
  */
 public interface ITradeReceiveProcessor {
+	/**
+	 * 处理交易结果
+	 * @param resultBean
+	 * @param tradeBean
+	 * @param tradeType
+	 */
     public void onReceive(ResultBean resultBean,TradeBean tradeBean,TradeTypeEnum tradeType);
+    /**
+     * 生成异步通知报文
+     * @param txnseqno
+     * @return
+     */
     public ResultBean generateAsyncRespMessage(String txnseqno);
 }

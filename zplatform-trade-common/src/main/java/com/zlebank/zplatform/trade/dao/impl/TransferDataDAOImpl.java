@@ -40,6 +40,7 @@ public class TransferDataDAOImpl  extends HibernateBaseDAOImpl<PojoTranData> imp
 		StringBuffer sqlCountBuffer = new StringBuffer("select count(*) from PojoTranData where 1=1 ");
 		List<Object> parameterList = new ArrayList<Object>();
 		if(queryTransferBean!=null){
+			
 			if(queryTransferBean.getTid()!=0){
 				sqlBuffer.append(" and tranBatch.tid = ? ");
 				sqlCountBuffer.append(" and tranBatch.tid = ? ");
@@ -57,6 +58,8 @@ public class TransferDataDAOImpl  extends HibernateBaseDAOImpl<PojoTranData> imp
 					parameterList.add(queryTransferBean.getStatus());
 				}
 			}
+			
+			
 		}
 		Query query = getSession().createQuery(sqlBuffer.toString());
 		Query countQuery = getSession().createQuery(sqlCountBuffer.toString());
@@ -66,6 +69,8 @@ public class TransferDataDAOImpl  extends HibernateBaseDAOImpl<PojoTranData> imp
 			countQuery.setParameter(i, parameter);
 			i++;
 		}
+		
+		
 		query.setFirstResult((pageSize)*((page==0?1:page)-1));
     	query.setMaxResults(pageSize);
 		Map<String, Object> resultMap = new HashMap<String, Object>();
@@ -80,6 +85,23 @@ public class TransferDataDAOImpl  extends HibernateBaseDAOImpl<PojoTranData> imp
     	Query query = getSession().createQuery(sqlBuffer.toString());
     	query.setParameter(0, tid);
     	return (PojoTranData) query.uniqueResult();
+    }
+    @Transactional(readOnly=true)
+    public List<Long> getBatchIDByMerchOrderNo(String merchOrderNo){
+    	StringBuffer sqlBuffer = new StringBuffer("from PojoTranData where 1=1 and merchOrderNo = ?");
+    	Query query = getSession().createQuery(sqlBuffer.toString());
+    	query.setParameter(0, merchOrderNo);
+    	List<PojoTranData> list = query.list();
+    	if(list.size()>0){
+    		List<Long> batchIdList = new ArrayList<Long>();
+    		for(PojoTranData tranData : list){
+    			batchIdList.add(tranData.getTranBatch().getTid());
+    		}
+    		return batchIdList;
+    	}
+    	
+    	
+    	return null;
     }
     
     @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
@@ -186,3 +208,4 @@ public class TransferDataDAOImpl  extends HibernateBaseDAOImpl<PojoTranData> imp
 		return query.list();
 	}
 }
+

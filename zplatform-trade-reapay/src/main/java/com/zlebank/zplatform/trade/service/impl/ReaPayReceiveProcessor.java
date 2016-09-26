@@ -12,6 +12,7 @@ package com.zlebank.zplatform.trade.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.trade.bean.AppPartyBean;
@@ -19,6 +20,7 @@ import com.zlebank.zplatform.trade.bean.PayPartyBean;
 import com.zlebank.zplatform.trade.bean.ReaPayResultBean;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.bean.TradeBean;
+import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
 import com.zlebank.zplatform.trade.bean.enums.TradeTypeEnum;
 import com.zlebank.zplatform.trade.bean.gateway.OrderAsynRespBean;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
@@ -56,7 +58,7 @@ public class ReaPayReceiveProcessor implements ITradeReceiveProcessor{
             TradeBean tradeBean,
             TradeTypeEnum tradeType) {
         
-     // TODO Auto-generated method stub
+    	// TODO Auto-generated method stub
         if(tradeType==TradeTypeEnum.SUBMITPAY){//确认支付（第三方快捷支付渠道）
             saveReaPayTradeResult(resultBean,tradeBean);
         }else if(tradeType==TradeTypeEnum.BANKSIGN){//交易查询
@@ -65,7 +67,7 @@ public class ReaPayReceiveProcessor implements ITradeReceiveProcessor{
            
         }
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
     public void saveReaPayTradeResult(ResultBean resultBean,TradeBean tradeBean){
             ReaPayResultBean payResult = (ReaPayResultBean) resultBean.getResultObj();
             if("0000".equals(payResult.getResult_code())||"3006".equals(payResult.getResult_code())||"3053".equals(payResult.getResult_code())||"3054".equals(payResult.getResult_code())||
@@ -75,14 +77,15 @@ public class ReaPayReceiveProcessor implements ITradeReceiveProcessor{
                 quickpayCustService.updateCardStatus(tradeBean.getCardId());
             }else{
                 //订单状态更新为失败
-                
-                txnsOrderinfoDAO.updateOrderToFail(tradeBean.getOrderId(),tradeBean.getMerchId());
+                txnsOrderinfoDAO.updateOrderToFail(tradeBean.getTxnseqno());
             }
             //String txnseqno, String paytype, String payordno, String payinst, String payfirmerno, String paysecmerno, String payordcomtime, String payordfintime, String cardNo, String rout, String routlvl
             PayPartyBean payPartyBean = new PayPartyBean(tradeBean.getTxnseqno(),"01", tradeBean.getOrderId(), ConsUtil.getInstance().cons.getReapay_chnl_code(), ConsUtil.getInstance().cons.getReapay_quickpay_merchant_id(), "", DateUtil.getCurrentDateTime(), "",tradeBean.getCardNo());
             payPartyBean.setPanName(tradeBean.getAcctName());
             txnsLogService.updatePayInfo_Fast(payPartyBean);
             txnsLogService.updateReaPayRetInfo(tradeBean.getTxnseqno(), payResult);
+            txnsLogService.updateTradeStatFlag(tradeBean.getTxnseqno(), TradeStatFlagEnum.PAYING);
+            
     }
 	/**
 	 *

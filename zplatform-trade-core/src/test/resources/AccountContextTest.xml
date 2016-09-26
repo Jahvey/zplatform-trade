@@ -1,59 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:context="http://www.springframework.org/schema/context"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
 	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jee="http://www.springframework.org/schema/jee" 
 	xsi:schemaLocation="
-    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
     http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
-    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
-    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd">
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
+    http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.1.xsd">
 
 	<!-- 使用annotation 自动注册com.zlebank.zplatform.acc包下面的bean, 并保证@Required、@Autowired的属性被注入 -->
 	<context:component-scan base-package="com.zlebank.zplatform">
 	</context:component-scan>
-<bean id="springContext" class="com.zlebank.zplatform.trade.utils.SpringContext"></bean>
+	<bean id="springContext" class="com.zlebank.zplatform.trade.utils.SpringContext"></bean>
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">  
+        <property name="locations">  
+           <list>  
+              <!-- 推荐使用file的方式引入，这样可以将配置和代码分离   -->
+              <value>file:D:/cert/*.properties</value> 
+              <value>file:/home/web/trade/config/*.properties</value> 
+              <value>classpath:*.properties</value>  
+            </list>  
+        </property>  
+    </bean>   
 	<bean id="sessionFactory"
 		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
-		<property name="dataSource" ref="accDataSource"/>
+		<property name="dataSource" ref="accDataSource" />
+		<!-- 注解方式配置 -->
 		<property name="packagesToScan">
 			<list>
 				<value>com.zlebank.zplatform.trade.model</value>
 				<value>com.zlebank.zplatform.acc.pojo</value>
-				<value>com.zlebank.zplatform.sms.pojo</value>
 				<value>com.zlebank.zplatform.commons.dao.pojo</value>
 				<value>com.zlebank.zplatform.member.pojo</value>
-				<value>com.zlebank.zplatform.specification.pojo</value>
+				<value>com.zlebank.zplatform.sms.pojo</value>
 			</list>
 		</property>
-<!-- 		<property name="annotatedClasses"> -->
-<!-- 			<list> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoAbstractSubject</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoSubject</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoAccount</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoAccFrozenTask</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoBusiAcct</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoBusiAcctSubjectMapping -->
-<!-- 				</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoSubjectRuleConfigure -->
-<!-- 				</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoAccEntry</value> -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoBusiness</value>		 -->
-<!-- 				<value>com.zlebank.zplatform.acc.pojo.PojoTxnsSplitAccount</value>	 -->
-<!-- 				<value>com.zlebank.zplatform.commons.dao.pojo.PojoChannel</value>	 -->
-<!-- 				</list> -->
-<!-- 		</property> -->
 		<property name="hibernateProperties">
 			<props>
-				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle9Dialect</prop>
-				<!-- <prop key="hibernate.hbm2ddl.auto">validate</prop> -->
-
-				<prop key="hibernate.autoReconnect">true</prop>
+				<prop key="dialect">org.hibernate.dialect.Oracle9Dialect</prop>
 				<prop key="hibernate.show_sql">false</prop>
 				<prop key="hibernate.format_sql">true</prop>
-				<!-- <propery name="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider</property> -->
-
-				<prop key="hibernate.temp.use_jdbc_metadata_defaults">false</prop>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.id.new_generator_mappings">true</prop>
 			</props>
 		</property>
 	</bean>
@@ -70,26 +62,62 @@
 		<property name="maxIdleTime" value="20" />
 
 	</bean>
-
+<bean id="propertyFileConfig"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>acc.config.properties</value>
+			</list>
+		</property>
+	</bean>
 
 	<bean id="transactionManager"
 		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
 		<property name="sessionFactory" ref="sessionFactory" />
 	</bean>
 	<tx:annotation-driven />
-	<!-- <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean"> 
-		<property name="jndiName" value="java:comp/env/jdbc/yhzjDs" /> </bean> -->
-
-	<bean id="propertyFileConfig"
-		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="locations">
-			<list>
-				<value>job-setting.properties</value>
-				<value>acc.config.properties</value>
-				<value>zlrt.properties</value>
-			</list>
-		</property>
-	</bean>
+	
 	
 
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxIdle" value="${redis.maxIdle}" />
+        <property name="maxTotal" value="${redis.maxActive}" />
+        <property name="maxWaitMillis" value="${redis.maxWait}" />
+        <property name="testOnBorrow" value="${redis.testOnBorrow}" />
+    </bean>
+
+    <bean id="connectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+        p:host-name="${redis.host}" p:port="${redis.port}" p:password="${redis.pass}" p:pool-config-ref="poolConfig"/>
+
+ 	<!-- <bean id="stringSerializer" class="org.springframework.data.redis.serializer.StringRedisSerializer"/> -->
+    
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">   
+        <property name="connectionFactory"   ref="connectionFactory" />   
+        <property name="keySerializer">   
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />   
+        </property>      
+        <property name="valueSerializer">   
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />   
+        </property>   
+        <property name="hashKeySerializer">     
+           <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>     
+        </property>   
+        <property name="hashValueSerializer">   
+           <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>     
+        </property> 
+     </bean> 
+    
+    <!-- <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="keySerializer" ref="stringSerializer" />
+        <property name="enableTransactionSupport" value="true" />
+    </bean> -->
+    <!-- <bean id="redisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate">
+         <property name="connectionFactory" ref="connectionFactory" />
+         <property name="keySerializer"><bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+         </property>
+         <property name="valueSerializer">
+             <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />
+         </property>
+     </bean> -->
 </beans>

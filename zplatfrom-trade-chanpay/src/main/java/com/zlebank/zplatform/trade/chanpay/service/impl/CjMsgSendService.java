@@ -1,5 +1,7 @@
 package com.zlebank.zplatform.trade.chanpay.service.impl;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 
@@ -26,7 +28,7 @@ import com.zlebank.zplatform.trade.chanpay.utils.S;
 public class CjMsgSendService {
 	public static final Log LOG = LogFactory.getLog(CjMsgSendService.class);
 
-	public String sendAndGetString(String message) throws Exception {
+	public String sendAndGetString(String message) throws HttpException, IOException   {
 		HttpClient client = new HttpClient();
 		client.getParams().setParameter(HttpMethodParams.HTTP_CONTENT_CHARSET, S.ENCODING_utf8);
 		client.getParams().setSoTimeout(10 * 60 * 1000);
@@ -49,7 +51,7 @@ public class CjMsgSendService {
 		return respData;
 	}//method
 
-	public sendAndGetBytes_Response sendAndGetBytes(String message) throws Exception {
+	public sendAndGetBytes_Response sendAndGetBytes(String message) throws HttpException, IOException {
 		HttpClient client = new HttpClient();
 		client.getParams().setParameter(HttpMethodParams.HTTP_CONTENT_CHARSET, S.ENCODING_utf8);
 		client.getParams().setSoTimeout(10 * 60 * 1000);
@@ -88,7 +90,7 @@ public class CjMsgSendService {
 		public String contentDisposition = "";
 	}//class
 
-	private String findHeaderAttr(Header head) throws Exception {
+	private String findHeaderAttr(Header head) throws UnsupportedEncodingException {
 		if (head == null)
 			return "";
 		String val = head.getValue();

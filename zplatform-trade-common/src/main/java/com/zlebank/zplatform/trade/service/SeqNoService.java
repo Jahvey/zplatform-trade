@@ -11,6 +11,7 @@
 package com.zlebank.zplatform.trade.service;
 
 import com.zlebank.zplatform.trade.bean.enums.SeqNoEnum;
+import com.zlebank.zplatform.trade.bean.enums.TradeSequenceEmum;
 
 /**
  * 各种序列号得到
@@ -22,4 +23,5 @@ import com.zlebank.zplatform.trade.bean.enums.SeqNoEnum;
  */
 public interface SeqNoService {
     String getBatchNo(SeqNoEnum type);
+    public Long getSeqNumber(TradeSequenceEmum tradeSequenceEmum);
 }

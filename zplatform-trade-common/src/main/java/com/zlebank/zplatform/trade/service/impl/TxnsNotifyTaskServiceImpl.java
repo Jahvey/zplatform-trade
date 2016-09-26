@@ -59,10 +59,14 @@ public class TxnsNotifyTaskServiceImpl extends BaseServiceImpl<TxnsNotifyTaskMod
     @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class) 
     public void saveTask(TxnsNotifyTaskModel task) {
         // TODO Auto-generated method stub
-        if("00".equals(task.getSendStatus())){
-            updateOrderSync(task.getTxnseqno());
-        }
-        super.save(task);
+    	TxnsNotifyTaskModel asyncNotifyTask = getAsyncNotifyTask(task.getTxnseqno());
+    	if(asyncNotifyTask!=null){
+    		if("00".equals(task.getSendStatus())){
+                updateOrderSync(task.getTxnseqno());
+            }
+    	}else{
+    		super.save(task);
+    	}
     }
     /**
      *
@@ -92,5 +96,18 @@ public class TxnsNotifyTaskServiceImpl extends BaseServiceImpl<TxnsNotifyTaskMod
     public void updateOrderSync(String txnseqno){
         super.updateByHQL("update TxnsOrderinfoModel set syncnotify=? where relatetradetxn = ? ", new Object[]{"00",txnseqno});
     }
+
+
+
+	/**
+	 *
+	 * @param txnseqno
+	 * @return
+	 */
+	@Override
+	@Transactional(readOnly=true)
+	public TxnsNotifyTaskModel getAsyncNotifyTask(String txnseqno) {
+		return super.getUniqueByHQL("from TxnsNotifyTaskModel where txnseqno=? and taskType=?", new Object[]{txnseqno,"1"});
+	}
 
 }

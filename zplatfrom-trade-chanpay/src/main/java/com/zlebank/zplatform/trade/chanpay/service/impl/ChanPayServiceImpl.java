@@ -18,24 +18,32 @@ import java.util.Map;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.trade.chanpay.bean.ReturnMessageBean;
 import com.zlebank.zplatform.trade.chanpay.bean.async.RefundAsyncResultBean;
 import com.zlebank.zplatform.trade.chanpay.bean.async.TradeAsyncResultBean;
+import com.zlebank.zplatform.trade.chanpay.bean.cj.G40003Bean;
 import com.zlebank.zplatform.trade.chanpay.bean.order.RefundOrderBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.BankItemBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.QueryBankBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.QueryBankResultBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.QueryTradeBean;
 import com.zlebank.zplatform.trade.chanpay.service.ChanPayService;
-import com.zlebank.zplatform.trade.chanpay.utils.ChanPayUtil;
+import com.zlebank.zplatform.trade.chanpay.service.impl.CjMsgSendService.sendAndGetBytes_Response;
+import com.zlebank.zplatform.trade.chanpay.utils.Cj;
+import com.zlebank.zplatform.trade.chanpay.utils.CjSignHelper;
 import com.zlebank.zplatform.trade.chanpay.utils.HttpProtocolHandler;
 import com.zlebank.zplatform.trade.chanpay.utils.HttpRequest;
 import com.zlebank.zplatform.trade.chanpay.utils.HttpResponse;
 import com.zlebank.zplatform.trade.chanpay.utils.HttpResultType;
 import com.zlebank.zplatform.trade.chanpay.utils.RSA;
+import com.zlebank.zplatform.trade.chanpay.utils.U;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 
 /**
@@ -50,6 +58,9 @@ import com.zlebank.zplatform.trade.utils.ConsUtil;
 public class ChanPayServiceImpl implements ChanPayService {
 
 	private static final Log log = LogFactory.getLog(ChanPayServiceImpl.class);
+	
+	@Autowired
+	private CjMsgSendService cjMsgSendService;
 	/**
 	 *
 	 * @param refundOrderBean
@@ -217,4 +228,47 @@ public class ChanPayServiceImpl implements ChanPayService {
 
         return nameValuePair;
     }
+
+
+	@Override
+	public sendAndGetBytes_Response getRecAccFile(G40003Bean data) {
+		sendAndGetBytes_Response res=null;
+	       try {
+				String cjReqmsg = buildCjmsg(data);
+				// 签名
+				CjSignHelper singHelper = new CjSignHelper();
+				String signMsg = singHelper.signXml$Add(cjReqmsg);
+			    res= cjMsgSendService.sendAndGetBytes(signMsg);
+			} catch (Exception e) {
+				log.error("下载畅捷对账文件报错"+e.getMessage());
+				e.printStackTrace();
+			}
+			return res;
+	}
+
+	public String buildCjmsg(G40003Bean data) {
+		Document doc = DocumentHelper.createDocument();
+		Element msgEl = doc.addElement("MESSAGE");
+
+		Element infoEl = msgEl.addElement("INFO");
+		infoEl.addElement("TRX_CODE").setText(Cj.XMLMSG_TRANS_CODE_对账文件下载);
+		infoEl.addElement("VERSION").setText(Cj.XMLMSG_VERSION_01);
+		infoEl.addElement("MERCHANT_ID").setText(U.nvl(data.getMertid()));
+		infoEl.addElement("REQ_SN").setText(U.nvl(data.getReqSn()));
+		infoEl.addElement("TIMESTAMP").setText(U.getCurrentTimestamp());
+		infoEl.addElement("SIGNED_MSG").setText("");
+
+		Element bodyEl = msgEl.addElement("BODY");
+		bodyEl.addElement("BILL_TYPE").setText(U.nvl(data.getBillType()));
+		if(data.getBillMonth()!=null){
+			bodyEl.addElement("BILL_MONTH").setText(U.nvl(data.getBillMonth()));
+		}else if(data.getBillDay()!=null){
+			bodyEl.addElement("BILL_DAY").setText(U.nvl(data.getBillDay()));
+		}
+		String xml = Cj.formatXml_UTF8(doc);
+		log.info("产生G40003下载对账单：" + U.substringByByte(xml, 512));
+		return xml;
+	}
+	
+	
 }

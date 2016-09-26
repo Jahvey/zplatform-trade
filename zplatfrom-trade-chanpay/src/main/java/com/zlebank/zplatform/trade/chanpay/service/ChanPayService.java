@@ -14,14 +14,17 @@ package com.zlebank.zplatform.trade.chanpay.service;
 import java.util.List;
 
 
-import com.zlebank.zplatform.trade.chanpay.bean.ReturnMessageBean;
 
+
+import com.zlebank.zplatform.trade.chanpay.bean.ReturnMessageBean;
 import com.zlebank.zplatform.trade.chanpay.bean.async.RefundAsyncResultBean;
 import com.zlebank.zplatform.trade.chanpay.bean.async.TradeAsyncResultBean;
+import com.zlebank.zplatform.trade.chanpay.bean.cj.G40003Bean;
 import com.zlebank.zplatform.trade.chanpay.bean.order.RefundOrderBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.BankItemBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.QueryBankBean;
 import com.zlebank.zplatform.trade.chanpay.bean.query.QueryTradeBean;
+import com.zlebank.zplatform.trade.chanpay.service.impl.CjMsgSendService.sendAndGetBytes_Response;
 
 /**
  * Class Description
@@ -67,4 +70,11 @@ public interface ChanPayService {
 	 * @return
 	 */
 	public boolean asyncNotifyRefund(RefundAsyncResultBean refundAsyncResultBean);
+	
+	/***
+	 * 获得对账文件
+	 * @param inputMap
+	 * @return
+	 */
+	public sendAndGetBytes_Response getRecAccFile(G40003Bean data);
 }

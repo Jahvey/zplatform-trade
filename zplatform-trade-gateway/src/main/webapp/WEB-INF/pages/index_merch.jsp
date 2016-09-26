@@ -87,7 +87,7 @@ String path = request.getContextPath();
 
 					
 					<a name="a_pay_type" href="javascript:selectPay(1);" id="a_fast" class="cur"><span>快捷支付</span></a>
-					<a name="a_pay_type" href="javascript:selectPay(2);" id="a_bank"><span>网银支付</span></a>
+					<!-- <a name="a_pay_type" href="javascript:selectPay(2);" id="a_bank"><span>网银支付</span></a> -->
 					<!--<a name="a_pay_type" href="javascript:selectPay(4);"><span>提现</span></a> -->
 					<script type="text/javascript">
 						$(function() {
@@ -310,6 +310,7 @@ String path = request.getContextPath();
 							<input type="hidden" value="${txnAmt }" name="amount" />
 							<input type="hidden" value="${txnseqno }" name="txnseqno"/>
 							<input type="hidden" value="${merchId }" name="merchId"/>
+							<input type="hidden" value="${subMerchId }" name="subMerchId"/>
 							<input type="hidden" value="ZLC00001" name="cashCode"/>
 							<input type="hidden" value="${busicode }" name="busicode"/>
 							<input type="hidden" value="${goodsName }" name="goodsName"/>
@@ -364,6 +365,7 @@ String path = request.getContextPath();
 							<input type="hidden" value="${txnAmt }" name="amount" />
 							<input type="hidden" value="${txnseqno }" name="txnseqno"/>
 							<input type="hidden" value="${merchId }" name="merchId"/>
+							<input type="hidden" value="${subMerchId }" name="subMerchId"/>
 							<input type="hidden" value="ZLC00001" name="cashCode"/>
 							<input type="hidden" value="${busicode }" name="busicode"/>
 							<input type="hidden" value="${goodsName }" name="goodsName"/>

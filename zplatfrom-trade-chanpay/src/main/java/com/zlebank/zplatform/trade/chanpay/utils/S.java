@@ -5,6 +5,7 @@
  */
 package com.zlebank.zplatform.trade.chanpay.utils;
 
+import java.io.File;
 import java.math.BigDecimal;
 
 /**
@@ -95,7 +96,14 @@ public class S {
 
 	/////////////////////////[ 初始化配置文件 ]/////////////////////////
 	static {
-		INI = new InIFile("classpath:/cfg.ini");
+		String path = "/home/web/trade/chanpay/";
+		File file = new File(path+ "cfg.ini");
+		if(!file.exists()){
+			INI = new InIFile("classpath:/cfg.ini");
+		    file = null;
+		}else{
+			INI = new InIFile(path+ "cfg.ini");
+		}
 		//------------------------------------------
 
 		// [default]

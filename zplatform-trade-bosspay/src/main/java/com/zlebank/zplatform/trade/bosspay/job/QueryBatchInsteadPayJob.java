@@ -23,7 +23,6 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.bosspay.bean.BtchpmtQueryResponseBean;
 import com.zlebank.zplatform.trade.bosspay.bean.BtchpmtResultBean;
-import com.zlebank.zplatform.trade.bosspay.bean.RealtmcolltnQueryResponseBean;
 import com.zlebank.zplatform.trade.bosspay.service.BossInsteadPayService;
 import com.zlebank.zplatform.trade.bosspay.service.BossPayService;
 import com.zlebank.zplatform.trade.dao.ITxnsInsteadPayDAO;
@@ -38,6 +37,7 @@ import com.zlebank.zplatform.trade.model.PojoTxnsInsteadPay;
  * @since
  */
 public class QueryBatchInsteadPayJob {
+	@SuppressWarnings("unused")
 	private static final Log log = LogFactory
 			.getLog(QueryBatchInsteadPayJob.class);
 

@@ -45,6 +45,7 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -136,7 +137,13 @@ public class UpdateRefundServiceImpl implements UpdateRefundService, UpdateSubje
             entryEvent = EntryEvent.TRADE_SUCCESS;
             log.info("退款交易成功，交易序列号:"+data.getTxnSeqNo());
             txnsLog.setApporderinfo("退款账务成功(交易成功)");
-        } else {
+        } else if("04".equals(data.getResultCode())){
+        	tradeInfo.setChannelId(txnsLog.getPayinst());
+        	tradeInfo.setChannelFee(data.getChannelFee());
+            entryEvent = EntryEvent.REFUND_EXCHANGE;
+            log.info("退款交易成功，交易序列号:"+data.getTxnSeqNo());
+            txnsLog.setApporderinfo("退款账务成功(代付退汇)");
+        }else {
             entryEvent = EntryEvent.TRADE_FAIL;
             log.info("退款交易失败，交易序列号:"+data.getTxnSeqNo());
             txnsLog.setApporderinfo("退款账务成功(交易失败)");
@@ -148,6 +155,10 @@ public class UpdateRefundServiceImpl implements UpdateRefundService, UpdateSubje
         	txnsLog.setAppinst("000000000000");
         	
             accEntryService.accEntryProcess(tradeInfo, entryEvent);
+            if ("00".equals(data.getResultCode())) {
+            	tradeInfo.setChannelFee(new BigDecimal(0));
+            	accEntryService.accEntryProcess(tradeInfo, EntryEvent.RECON_SUCCESS);
+            }
             txnsRefundService.update(refund);
             txnsOrderinfoDAO.updateOrderinfo(order);
             txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
@@ -167,6 +178,20 @@ public class UpdateRefundServiceImpl implements UpdateRefundService, UpdateSubje
 			e1.printStackTrace();
 			txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
             txnsLog.setApporderinfo(e1.getMessage());
+		} catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
+		}catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
 		}
         //更新交易流水应用方信息
         txnsLogService.updateAppStatus(data.getTxnSeqNo(), txnsLog.getApporderstatus(), txnsLog.getApporderinfo());

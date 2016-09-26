@@ -29,6 +29,13 @@ public interface ICMBCQuickPayService {
     public ResultBean queryResult(String serialno);
     
     /**
+     * 查询民生跨行代扣交易结果
+     * @param txnseqno
+     * @return
+     */
+    public ResultBean queryCrossLineTrade(String txnseqno);
+    
+    /**
      * 本行代扣
      * @param trade
      * @return

@@ -10,12 +10,17 @@
  */
 package com.zlebank.zplatform.wechat.wx;
 
+import java.util.Date;
+
+import net.sf.json.JSONObject;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.zlebank.zplatform.wechat.exception.WXVerifySignFailedException;
 import com.zlebank.zplatform.wechat.wx.bean.QueryBillBean;
-
+import com.zlebank.zplatform.wechat.wx.bean.WXOrderBean;
+import com.zlebank.zplatform.commons.utils.DateUtil;
 /**
  * 微信测试类
  *
@@ -36,29 +41,29 @@ public class TestWX {
         WXApplication instance = new WXApplication();
         
         /********************下订单**************************/
-//        WXOrderBean order = new WXOrderBean();
-//        order.setBody("iPad");
-//        order.setDetail("iPad mini  16G  白色");
-//        order.setAttach("北京太阳宫");
-//        order.setOut_trade_no("ZL"+DateUtil.getCurrentDateTime());
-//        order.setTotal_fee("1");
-//        order.setTime_start(DateUtil.getCurrentDateTime());
-//        order.setTime_expire(DateUtil.formatDateTime("yyyyMMddHHmmss", DateUtil.skipDateTime(new Date(), 1)));
-//        order.setGoods_tag("WXG");
-//        order.setNotify_url("http://www.weixin.qq.com/wxpay/pay.php");
-//        
-//        try {
-//            JSONObject xml  = instance.createOrder(order);
-//            log.debug("【下订单返回结果】"+ xml.toString());
-//        } catch (WXVerifySignFailedException e) {
-//            e.printStackTrace();
-//        }
+        WXOrderBean order = new WXOrderBean();
+        order.setBody("iPad");
+        order.setDetail("iPad mini  16G  白色");
+        order.setAttach("北京太阳宫");
+        order.setOut_trade_no("ZL"+DateUtil.getCurrentDateTime());
+        order.setTotal_fee("1");
+        order.setTime_start(DateUtil.getCurrentDateTime());
+        order.setTime_expire(DateUtil.formatDateTime("yyyyMMddHHmmss", DateUtil.skipDateTime(new Date(), 1)));
+        order.setGoods_tag("WXG");
+        order.setNotify_url("http://www.weixin.qq.com/wxpay/pay.php");
+        
+        try {
+            JSONObject xml  = instance.createOrder(order);
+            log.debug("【下订单返回结果】"+ xml.toString());
+        } catch (WXVerifySignFailedException e) {
+            e.printStackTrace();
+        }
         
         /********************下载对账单**************************/
-      QueryBillBean bill = new QueryBillBean();
+     /* QueryBillBean bill = new QueryBillBean();
       bill.setBill_date("20160520");
       bill.setBill_type("ALL");
-      instance.downLoadBill(bill);
+      instance.downLoadBill(bill);*/
         
         /********************退款**************************/
 //      RefundBean rb = new RefundBean();

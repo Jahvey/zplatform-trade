@@ -9,7 +9,12 @@ package com.zlebank.zplatform.trade.bosspay.client;
 
 public class ColltnAndPmtServiceLocator extends org.apache.axis.client.Service implements com.zlebank.zplatform.trade.bosspay.client.ColltnAndPmtService {
 
-    public ColltnAndPmtServiceLocator() {
+    /**
+	 * serialVersionUID
+	 */
+	private static final long serialVersionUID = -4990705024754688032L;
+
+	public ColltnAndPmtServiceLocator() {
     }
 
 
@@ -70,7 +75,8 @@ public class ColltnAndPmtServiceLocator extends org.apache.axis.client.Service i
      * If this service has no port for the given interface,
      * then ServiceException is thrown.
      */
-    public java.rmi.Remote getPort(Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
+    @SuppressWarnings("rawtypes")
+	public java.rmi.Remote getPort(Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
         try {
             if (com.zlebank.zplatform.trade.bosspay.service.ColltnAndPmtService.class.isAssignableFrom(serviceEndpointInterface)) {
             	com.zlebank.zplatform.trade.bosspay.client.ColltnAndPmtServiceSoapBindingStub _stub = new com.zlebank.zplatform.trade.bosspay.client.ColltnAndPmtServiceSoapBindingStub(new java.net.URL(ColltnAndPmtServiceImplPort_address), this);
@@ -89,6 +95,7 @@ public class ColltnAndPmtServiceLocator extends org.apache.axis.client.Service i
      * If this service has no port for the given interface,
      * then ServiceException is thrown.
      */
+    @SuppressWarnings("rawtypes")
     public java.rmi.Remote getPort(javax.xml.namespace.QName portName, Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
         if (portName == null) {
             return getPort(serviceEndpointInterface);
@@ -107,9 +114,9 @@ public class ColltnAndPmtServiceLocator extends org.apache.axis.client.Service i
     public javax.xml.namespace.QName getServiceName() {
         return new javax.xml.namespace.QName("http://impl.service.wisvalley.bosspay.com/", "ColltnAndPmtService");
     }
-
+    @SuppressWarnings("rawtypes")
     private java.util.HashSet ports = null;
-
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public java.util.Iterator getPorts() {
         if (ports == null) {
             ports = new java.util.HashSet();

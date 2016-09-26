@@ -1,3 +1,4 @@
+
 package com.zlebank.zplatform.trade.dao.impl;
 
 import java.awt.color.CMMException;
@@ -44,8 +45,9 @@ public class TransferBatchDAOImpl extends HibernateBaseDAOImpl<PojoTranBatch>
         StringBuffer sqlCountBuffer = new StringBuffer(
                 "select count(*) from PojoTranBatch  where (status = ? or status = ?)");
         List<Object> parameterList = new ArrayList<Object>();
+        List<Long> batchIdList = null;
         parameterList.add("01");
-        parameterList.add("02");
+        parameterList.add("00");
         if (queryTransferBean != null) {
             if (StringUtil.isNotEmpty(queryTransferBean.getBatchNo())) {
                 sqlBuffer.append(" and tranBatchNo = ? ");
@@ -67,6 +69,12 @@ public class TransferBatchDAOImpl extends HibernateBaseDAOImpl<PojoTranBatch>
                 sqlCountBuffer.append(" and busiType = ? ");
                 parameterList.add(queryTransferBean.getBusiType());
             }
+            
+            if(StringUtil.isNotEmpty(queryTransferBean.getMerchOrderNo())){
+				sqlBuffer.append(" and tid in (:alist) ");
+				sqlCountBuffer.append(" and tid in (:alist)");
+				batchIdList = transferDataDAO.getBatchIDByMerchOrderNo(queryTransferBean.getMerchOrderNo());
+			}
         }
         sqlBuffer.append(" order by applyTime desc");
         Query query = getSession().createQuery(sqlBuffer.toString());
@@ -78,6 +86,10 @@ public class TransferBatchDAOImpl extends HibernateBaseDAOImpl<PojoTranBatch>
             countQuery.setParameter(i, parameter);
             i++;
         }
+        if(batchIdList!=null){
+			query.setParameterList("alist", batchIdList);
+			countQuery.setParameterList("alist", batchIdList);
+		}
         query.setFirstResult((pageSize) * ((page == 0 ? 1 : page) - 1));
         query.setMaxResults(pageSize);
 

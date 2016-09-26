@@ -91,8 +91,8 @@ public class WXApplication {
      * @throws WXVerifySignFailedException 
      */
     public JSONObject createOrder(WXOrderBean order) throws WXVerifySignFailedException {
-        if (log.isDebugEnabled())
-            log.debug("【下订单】【开始】"+JSONObject.fromObject(order));
+        
+        log.info("【下订单】【开始】"+JSONObject.fromObject(order));
         // 下订单
         String xml  = createXML(order);
         // 发送订单
@@ -106,23 +106,18 @@ public class WXApplication {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        if (log.isDebugEnabled())
-            log.debug("【本地生成的应答报文签名】"+mySign);
+        log.info("【本地生成的应答报文签名】"+mySign);
         if (SUCCESS.equals(res.getReturn_code())) {
             if (mySign.equals(res.getResult().getSign())) {
-                if (log.isDebugEnabled())
-                    log.debug("【验签成功】");
+            	log.info("【验签成功】");
             } else {
-                if (log.isDebugEnabled())
-                    log.debug("【验签失败】");
+        		log.info("【验签失败】");
                 throw new WXVerifySignFailedException();
             }
         }
         // 组装调起支付接口报文
         JSONObject rtnMsg = getInvokePayMsg(res.getResult().getPrepay_id());
-
-        if (log.isDebugEnabled())
-            log.debug("【下订单】【结束】"+rtnMsg);
+        log.info("【下订单】【结束】"+rtnMsg);
         return rtnMsg;
     }
     
@@ -132,8 +127,7 @@ public class WXApplication {
      * @return
      */
     private JSONObject getInvokePayMsg(String prepayid) {
-        if (log.isDebugEnabled())
-            log.debug("【组装调起支付接口报文】【开始】"+prepayid);
+        log.info("【组装调起支付接口报文】【开始】"+prepayid);
         Map<String, Object> msgMap = new HashMap<String, Object>();
         // 添加属性
         msgMap.put("appid", WXConfigure.getAppid());// 应用ID【固定】
@@ -146,8 +140,7 @@ public class WXApplication {
         String sign = SignUtil.getSign(msgMap);
         msgMap.put("sign", sign);
         JSONObject msg = JSONObject.fromObject(msgMap);
-        if (log.isDebugEnabled())
-            log.debug("【组装调起支付接口报文】【返回】"+msg.toString());
+        log.info("【组装调起支付接口报文】【返回】"+msg.toString());
         return msg;
     }
     
@@ -159,7 +152,8 @@ public class WXApplication {
      */
     private String sendXMLData(String xml, String url) {
         try {
-            log.debug("【发送给微信的报文为】"+xml);
+            log.info("【发送给微信的报文为】"+xml);
+            log.info("【发送给微信的url为】"+url);
 //            String url = "https://api.mch.weixin.qq.com/pay/unifiedorder";
             PostMethod post = null;
             post = new PostMethod(url);
@@ -170,6 +164,7 @@ public class WXApplication {
             HttpClient client = new HttpClient();
             client.getHttpConnectionManager().getParams().setSoTimeout(10000);// 10秒过期
             int status = client.executeMethod(post);
+            log.info("【发送给微信返回 的状态status:】"+status);
             // 成功接收
             if (status == 200) {
                 BufferedReader br = null;
@@ -180,13 +175,11 @@ public class WXApplication {
                     jsonStr.append(line);
                     line = br.readLine();
                 }
-                log.debug("【从微信收到的结果为】"+jsonStr);
-                if (log.isDebugEnabled())
-                    log.debug("【成功】状态返回200");
+                log.info("【从微信收到的结果为】"+jsonStr);
+                log.info("【成功】状态返回200");
                 return jsonStr.toString();
             } else {
-                if (log.isDebugEnabled())
-                    log.debug("【失败】状态返回不是200，-->"+status);
+                log.info("【失败】状态返回不是200，-->"+status);
             }
         } catch (Exception e) {
             log.error("发送代付通知时发生错误！");
@@ -398,20 +391,30 @@ public class WXApplication {
      * @param type
      */
     private PrintBean parseDownLoadBill(String data, BillTypeEnum type) {
-         int index1 = data.indexOf("`");
-         int index2 = data.indexOf("总交易单数,总交易额,总退款金额,总企业红包退款金额,手续费总金额");
-        String bodyTitle = data.substring(0, index1);
-        String bodyDetail = data.substring(index1, index2);
-        String footContent = data.substring(index2);
-        int index3 = footContent.indexOf("`");
-        String footTitle = footContent.substring(0, index3);
-        String footDetail = footContent.substring(index3);
-        PrintBean print = new PrintBean(type.getCode(), 6);
-        print.addAllTitle(bodyTitle);
-        print.addAllContent(bodyDetail);
-        print.addFootTitle(footTitle);
-        print.addFootContent(footDetail);
-        print.print();
+    	if(data.indexOf("No Bill Exist")>0){
+    		return null;
+    	}
+        PrintBean print = null;
+		try {
+			int index1 = data.indexOf("`");
+			int index2 = data.indexOf("总交易单数,总交易额,总退款金额,总企业红包退款金额,手续费总金额");
+			String bodyTitle = data.substring(0, index1);
+			String bodyDetail = data.substring(index1, index2);
+			String footContent = data.substring(index2);
+			int index3 = footContent.indexOf("`");
+			String footTitle = footContent.substring(0, index3);
+			String footDetail = footContent.substring(index3);
+			print = new PrintBean(type.getCode(), 6);
+			print.addAllTitle(bodyTitle);
+			print.addAllContent(bodyDetail);
+			print.addFootTitle(footTitle);
+			print.addFootContent(footDetail);
+			print.print();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			
+		}
         return print;
     }
     
@@ -512,6 +515,7 @@ public class WXApplication {
         addElement(root, "refund_fee_type", WXConfigure.getFeeType());// 货币类型，符合ISO 4217标准的三位字母代码，默认人民币：CNY，其他值列表详见货币类型
         addElement(root, "total_fee",bean.getTotal_fee());// 订单总金额，单位为分，只能为整数，详见支付金额
         addElement(root, "transaction_id",bean.getTransaction_id());// 微信生成的订单号，在支付通知中有返回
+        
         // 加签
         String sign = sign(getStringXML(invokeAPI));
         addElement(root, "sign", sign);// 签名
@@ -519,6 +523,8 @@ public class WXApplication {
         
         // 发送报文
         String rtnXml = SSLSender.sendXml(xml);
+        
+        log.info("【发送给微信的报文为】"+rtnXml);
         // 封装成Bean
         RefundResultBean result = new RefundResultBean();
         try {
@@ -538,11 +544,11 @@ public class WXApplication {
             log.debug("【本地生成的应答报文签名】"+mySign);
         if (SUCCESS.equals(result.getReturn_code())) {
             if (mySign.equals(result.getSign())) {
-                if (log.isDebugEnabled())
-                    log.debug("【验签成功】");
+                
+                    log.info("【验签成功】");
             } else {
-                if (log.isDebugEnabled())
-                    log.debug("【验签失败】");
+               
+                    log.info("【验签失败】");
                 throw new WXVerifySignFailedException();
             }
         }

@@ -10,6 +10,8 @@
  */
 package com.zlebank.zplatform.trade.insteadPay.message;
 
+import java.io.Serializable;
+
 import org.hibernate.validator.constraints.Length;
 
 import com.zlebank.zplatform.commons.validator.Scontant;
@@ -24,7 +26,7 @@ import com.zlebank.zplatform.trade.common.validator.S;
  * @date 2015年10月8日 下午2:48:16
  * @since 
  */
-public class BaseMessage {
+public class BaseMessage implements Serializable{
     /**版本**/
     @S(max=6)
     protected String version;

@@ -1,16 +1,28 @@
 package com.zlebank.zplatform.trade.adapter.accounting.impl;
 
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
+import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
+import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
+import com.zlebank.zplatform.acc.service.entry.EntryEvent;
+import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
+import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.trade.adapter.accounting.IAccounting;
 import com.zlebank.zplatform.trade.bean.ResultBean;
-import com.zlebank.zplatform.trade.dao.TransferBatchDAO;
-import com.zlebank.zplatform.trade.dao.TransferDataDAO;
-import com.zlebank.zplatform.trade.model.PojoTranBatch;
-import com.zlebank.zplatform.trade.model.PojoTranData;
+import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
+import com.zlebank.zplatform.trade.bean.enums.InsteadPayDetailStatusEnum;
+import com.zlebank.zplatform.trade.bean.enums.RefundStatusEnum;
+import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
+import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
+import com.zlebank.zplatform.trade.model.TxnsLogModel;
+import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.model.TxnsRefundModel;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.ITxnsRefundService;
@@ -25,128 +37,111 @@ import com.zlebank.zplatform.trade.utils.SpringContext;
  * @since
  */
 public class RefundAccounting implements IAccounting{
-    
-    private TransferBatchDAO transferBatchDAO;
-    private TransferDataDAO transferDataDAO;
+    private static final Log log = LogFactory.getLog(RefundAccounting.class);
     private AccEntryService accEntryService;
     private ITxnsRefundService txnsRefundService;
     private ITxnsLogService txnsLogService;
+    private ITxnsOrderinfoDAO txnsOrderinfoDAO;
     public RefundAccounting(){
-        transferBatchDAO = (TransferBatchDAO) SpringContext.getContext().getBean("transferBatchDAO");
-        transferDataDAO = (TransferDataDAO) SpringContext.getContext().getBean("transferDataDAO");
-        accEntryService = (AccEntryService) SpringContext.getContext().getBean("accEntryService");
+        accEntryService = (AccEntryService) SpringContext.getContext().getBean("accEntryServiceImpl");
         txnsRefundService = (ITxnsRefundService) SpringContext.getContext().getBean("txnsRefundService");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
+        txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfo");;
     }
     
-    @Override
-    public ResultBean accountedForInsteadPay(String batchno) {
-        /*List<PojoTransferBatch> transferBatchList = transferBatchDAO.findByInsteadpaybatchno(batchno);
-        for(PojoTransferBatch transferBatch : transferBatchList){
-            String commiteTime = DateUtil.getCurrentDateTime();
-            String transferBatchNo = transferBatch.getBatchno();
-            List<PojoTransferData> transferDataList = transferDataDAO.findTransDataByBatchNoAndAccstatus(transferBatchNo);
-            for(PojoTransferData transferData : transferDataList){
-                TradeInfo tradeInfo = initAccountingData(transferData, transferBatch);
-                String errorMsg = "";
-                try {
-                    accEntryService.accEntryProcess(tradeInfo);
-                } catch (AccBussinessException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    errorMsg=e.getMessage();
-                } catch (AbstractBusiAcctException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    errorMsg=e.getMessage();
-                } catch (NumberFormatException e) {
-                    // TODO Auto-generated catch block cwk552 tbb533
-                    e.printStackTrace();
-                    errorMsg=e.getMessage();
-                }
-                //应用方信息
-                AppPartyBean appParty = new AppPartyBean("123",
-                        "99999999", commiteTime,
-                        DateUtil.getCurrentDateTime(), transferData.getTxnseqno(), "");
-                txnsLogService.updateAppInfo(appParty);
-                if(StringUtil.isEmpty(errorMsg)){//错误信息为空，入账成功
-                    transferData.setAccstatus(AccStatusEnum.Finish.getCode());
-                    transferData.setAccinfo("账务处理成功");
-                    txnsLogService.updateAppStatus(transferData.getTxnseqno(), AccStatusEnum.Finish.getCode(), "退款账务成功");
-                    //更新原始订单信息
-                    updateRefundOrder(transferData, batchno, transferBatch);
-                }else{
-                    transferData.setAccstatus(AccStatusEnum.AccountingFail.getCode());
-                    transferData.setAccinfo(errorMsg);
-                    txnsLogService.updateAppStatus(transferData.getTxnseqno(), AccStatusEnum.AccountingFail.getCode(), errorMsg);
-                }  
-
-            }
-            transferDataDAO.batchUpdateTransDataAccStatus(transferDataList);
-           
-        }*/
-        return null;
-    }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
-    public void updateRefundOrder(PojoTranData transferData,String batchno,PojoTranBatch transferBatch){
-        TxnsRefundModel refundModel = new TxnsRefundModel();
-        refundModel.setStatus(transferData.getStatus());
-        /*refundModel.setRefundinstid(transferBatch.getChnlcode());
-        refundModel.setRetcode(transferData.getRespcode());
-        refundModel.setRetinfo(transferData.getRespmsg());
-        refundModel.setMemberid(transferBatch.getMerchid());
-        refundModel.setRefundorderno(transferData.getRelatedorderno());*/
-        txnsRefundService.updateRefundResult(refundModel);
-    }
 
     @Override
     public ResultBean accountedFor(String txnseqno) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-    private TradeInfo initAccountingData(PojoTranData transferData,PojoTranBatch transferBatch){
-        /*TxnsRefundModel refund = txnsRefundService.getRefundByRefundorderNo(transferData.getRelatedorderno(),transferData.getMemberid());
-        String txnseqno = transferData.getTxnseqno();
-        *//**支付订单号**//*
-        String payordno = transferData.getRelatedorderno();
-        *//**交易类型 - 根据交易结果进行判断，**//*
-        String busiCode = "";
-        *//**付款方会员ID**//*
-        String payMemberId = transferData.getMemberid();
-        *//**收款方会员ID**//*
-        String payToMemberId = refund.getMemberid();
-        if(transferData.getBusicode().equals("40000001")){
-            if("S".equalsIgnoreCase(transferData.getResptype())){//交易成功
-                busiCode = "40000002";
-            }else if("F".equalsIgnoreCase(transferData.getResptype())){//交易失败
-                busiCode = "40000003";
-                payMemberId = transferBatch.getMerchid();
-                payToMemberId = transferBatch.getMerchid();
-            }
+    	TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
+		TxnsRefundModel refund = txnsRefundService.getRefundByTxnseqno(txnseqno);
+		TxnsOrderinfoModel order = txnsOrderinfoDAO.getOrderByTxnseqno(txnseqno);
+		if (refund == null) {
+            log.error("没有找到需要记账的流水");
+            return null;
+        }
+		if ("0000".equals(txnsLog.getRetcode())) {
+			refund.setStatus(InsteadPayDetailStatusEnum.TRAN_FINISH.getCode());
+			order.setStatus("00");
+        } else{
+            refund.setStatus(RefundStatusEnum.FAILED.getCode());
+            order.setStatus("03");
         }
         
-        
-        *//**收款方父级会员ID**//*
-        String payToParentMemberId="";
-        *//**渠道**//*
-        String channelId = transferBatch.getChnlcode();//支付机构代码
-        
-        *//**产品id**//*
-        String productId = "";
-        *//**交易金额**//*
-        BigDecimal amount = new BigDecimal(transferData.getTransamt());
-        *//**佣金**//*
-        BigDecimal commission = new BigDecimal(0);
-        *//**手续费**//*
-        long txnfee = 0;
-        BigDecimal charge = new BigDecimal(txnfee);
-        *//**金额D**//*
-        BigDecimal amountD = new BigDecimal(0);
-        *//**金额E**//*
-        BigDecimal amountE = new BigDecimal(0);
-        TradeInfo tradeInfo = new TradeInfo(txnseqno, payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
-        return tradeInfo;*/
-    	return null;
+        TradeInfo tradeInfo = new TradeInfo();
+        tradeInfo.setPayMemberId(txnsLog.getAccmemberid());
+        tradeInfo.setPayToMemberId(txnsLog.getAccsecmerno());
+        tradeInfo.setAmount(new BigDecimal(txnsLog.getAmount()));
+        tradeInfo.setCharge(new BigDecimal(txnsLog.getTxnfee()));
+        tradeInfo.setTxnseqno(txnsLog.getTxnseqno());
+        tradeInfo.setCoopInstCode(txnsLog.getAccfirmerno());
+        tradeInfo.setChannelId(txnsLog.getPayinst());
+        tradeInfo.setBusiCode(BusinessEnum.REFUND_BANK.getBusiCode());
+        EntryEvent entryEvent = null;
+        if ("0000".equals(txnsLog.getRetcode())) {
+            tradeInfo.setChannelId(txnsLog.getPayinst());
+            entryEvent = EntryEvent.TRADE_SUCCESS;
+            log.info("退款交易成功，交易序列号:"+txnseqno);
+            txnsLog.setApporderinfo("退款账务成功(交易成功)");
+        } else {
+        	tradeInfo.setChannelId(txnsLog.getPayinst());
+            entryEvent = EntryEvent.TRADE_FAIL;
+            log.info("退款交易失败，交易序列号:"+txnseqno);
+            txnsLog.setApporderinfo("退款账务成功(交易失败)");
+        }
+       
+        try {
+        	log.info("账务处理数据:"+ JSON.toJSONString(tradeInfo));
+        	txnsLog.setAppordcommitime(DateUtil.getCurrentDateTime());
+        	txnsLog.setAppinst("000000000000");
+            accEntryService.accEntryProcess(tradeInfo, entryEvent);
+            txnsRefundService.updateRefund(refund);
+            txnsOrderinfoDAO.updateOrderinfo(order);
+            txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
+            txnsLog.setAppordfintime(DateUtil.getCurrentDateTime());
+        }catch (AccBussinessException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+            txnsLog.setApporderinfo(e1.getMessage());
+		} catch (AbstractBusiAcctException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+            txnsLog.setApporderinfo(e1.getMessage());
+		} catch (NumberFormatException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+            txnsLog.setApporderinfo(e1.getMessage());
+		} catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
+		}
+        //更新交易流水应用方信息
+        txnsLogService.updateAppStatus(txnseqno, txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
+        txnsLog.setAccbusicode(BusinessEnum.REFUND_BANK.getBusiCode());
+        txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
+        txnsLogService.updateTxnsLog(txnsLog);
+        txnsLogService.updateTradeStatFlag(txnseqno, TradeStatFlagEnum.FINISH_ACCOUNTING);
+        log.info("退款账务结束，交易序列号:"+txnseqno);
+        return null;
     }
+
+
+
+	/**
+	 *
+	 * @param batchno
+	 * @return
+	 */
+	@Override
+	public ResultBean accountedForInsteadPay(String batchno) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

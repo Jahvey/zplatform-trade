@@ -9,7 +9,7 @@ import javax.persistence.Table;
  * TTxncodeDef entity. @author MyEclipse Persistence Tools
  */
 @Entity
-@Table(name = "T_TXNCODE_DEF", schema = "PAYSERVICE")
+@Table(name = "T_TXNCODE_DEF")
 public class TxncodeDefModel implements java.io.Serializable {
 
 	// Fields

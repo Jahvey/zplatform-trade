@@ -13,9 +13,6 @@ package com.zlebank.zplatform.trade.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.zlebank.zplatform.trade.bean.UpdateData;
 
 /**
@@ -48,7 +45,6 @@ public class ObserverListService {
     public void setObserverList(List<UpdateSubject> observerList) {
         this.observerList = observerList;
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
     public void notify(UpdateData updateData, String busiType) {
         for (UpdateSubject subject : observerList) {
         	if (subject.getBusiCode().equals(busiType)) 

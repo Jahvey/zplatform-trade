@@ -60,25 +60,33 @@ public class ZlTradeServicImpl implements IZlTradeService{
     @Override
     public ResultBean sendMarginSms(MarginSmsBean marginSmsBean) {
         ResultBean resultBean = null;
-        try {
-            String sendMessage = ObjectDynamic.generateZLPayParamer(marginSmsBean, false);
-            log.info("send date:" + sendMessage);
-            // 对数据加密
-            String encryptData = ZlpayUtil.encryptData(sendMessage, ConsUtil.getInstance().cons.getKeyStorePath_zlrt());
-            log.info(encryptData);
-            // 对数据加签
-            String signData = ZlpayUtil.signData(sendMessage, ConsUtil.getInstance().cons.getKeyStorePath_zlrt());
-            //log.info(signData);
-            String responseMsg = sendMsg(ConsUtil.getInstance().cons.getInstuId(), "2305", encryptData,signData, ConsUtil.getInstance().cons.getSendMarginSms_url());
-            log.info("responseMsg:"+responseMsg);
-            // 解析响应信息
-            String responseStr = ZlpayUtil.parseResponse(responseMsg,ConsUtil.getInstance().cons.getCerPath_zlrt());
-            log.info("receive message:"+responseStr);
-            resultBean = ZlPayTradeAnalyzer.generateResultBean(responseStr);
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        
+            try {
+				String sendMessage = ObjectDynamic.generateZLPayParamer(marginSmsBean, false);
+				log.info("send date:" + sendMessage);
+				// 对数据加密
+				log.info(ConsUtil.getInstance().cons.getKeyStorePath_zlrt());
+				String encryptData = ZlpayUtil.encryptData(sendMessage, ConsUtil.getInstance().cons.getKeyStorePath_zlrt());
+				log.info(encryptData);
+				// 对数据加签
+				String signData = ZlpayUtil.signData(sendMessage, ConsUtil.getInstance().cons.getKeyStorePath_zlrt());
+				//log.info(signData);
+				String responseMsg = sendMsg(ConsUtil.getInstance().cons.getInstuId(), "2305", encryptData,signData, ConsUtil.getInstance().cons.getSendMarginSms_url());
+				log.info("responseMsg:"+responseMsg);
+				// 解析响应信息
+				String responseStr = ZlpayUtil.parseResponse(responseMsg,ConsUtil.getInstance().cons.getCerPath_zlrt());
+				log.info("receive message:"+responseStr);
+				resultBean = ZlPayTradeAnalyzer.generateResultBean(responseStr);
+			} catch (MsgException e) {
+				// TODO Auto-generated catch block
+				resultBean = new ResultBean("T000", e.getMessage());
+				e.printStackTrace();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				resultBean = new ResultBean("T000", e.getMessage());
+				e.printStackTrace();
+			}
+        
         return resultBean;
     }
 

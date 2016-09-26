@@ -21,5 +21,10 @@ import com.zlebank.zplatform.trade.model.ChnlDetaModel;
  * @since 
  */
 public interface IChnlDetaService extends IBaseService<ChnlDetaModel, Long>{
+	/**
+	 * 通过渠道代码获取渠道信息
+	 * @param chnlCode
+	 * @return
+	 */
     public ChnlDetaModel getChannelByCode(String chnlCode);
 }

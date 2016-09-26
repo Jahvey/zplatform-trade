@@ -12,6 +12,8 @@ package com.zlebank.zplatform.trade.dao;
 
 import java.util.List;
 
+import org.hibernate.Session;
+
 import com.zlebank.zplatform.commons.dao.BaseDAO;
 import com.zlebank.zplatform.trade.model.ConfigInfoModel;
 
@@ -43,4 +45,6 @@ public interface ConfigInfoDAO  extends BaseDAO<ConfigInfoModel>{
      * @return
      */
     public long getSequence(String sequences);
+    
+    public Session getSession();
 }

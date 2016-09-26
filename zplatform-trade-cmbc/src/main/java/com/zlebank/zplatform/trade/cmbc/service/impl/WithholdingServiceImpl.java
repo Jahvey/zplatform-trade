@@ -215,6 +215,7 @@ public class WithholdingServiceImpl implements IWithholdingService {
      */
     @Override
     public ResultBean realTimeWitholding(WithholdingMessageBean withholdingMsg) throws CMBCTradeException {
+    	ResultBean resultBean = null;
         RealTimeWithholdingBean realNameAuthBean = new RealTimeWithholdingBean(withholdingMsg);
         String message = realNameAuthBean.toXML();
         log.info("send realTimeWitholding msg xml :"+message);
@@ -260,11 +261,17 @@ public class WithholdingServiceImpl implements IWithholdingService {
             WithholdingLongSocketClient client =  WithholdingLongSocketClient.getInstance(ConsUtil.getInstance().cons.getCmbc_withholding_ip(), ConsUtil.getInstance().cons.getCmbc_withholding_port(), 30000);
             client.setReceiveProcessor(new CMBCWithholdingReciveProcessor());
             client.sendMessage(sendBytes);
+            resultBean = new ResultBean("success");
+            
         } catch (UnsupportedEncodingException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
-        return null;
+            resultBean = new ResultBean("09", e.getMessage());
+        }catch (Exception e) {
+        	e.printStackTrace();
+        	resultBean = new ResultBean("09", e.getMessage());
+		}
+        return resultBean;
     }
     /**
      *

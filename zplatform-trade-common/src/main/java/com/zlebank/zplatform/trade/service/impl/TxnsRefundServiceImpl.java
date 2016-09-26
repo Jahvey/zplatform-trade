@@ -56,9 +56,9 @@ public class TxnsRefundServiceImpl extends BaseServiceImpl<TxnsRefundModel,Long>
         return getUniqueByHQL(hql, new Object[]{refundorderno,merchno});
     }
     
-    public TxnsRefundModel getRefundByOldTxnSeqno(String refundorderno,String merchno) {
+    public TxnsRefundModel getRefundByOldTxnSeqno(String txnseqno_old,String merchno) {
         String hql = " from TxnsRefundModel c where c.oldtxnseqno=? and c.status in (01,21,00)";
-        return super.getUniqueByHQL(hql, new Object[]{refundorderno});
+        return super.getUniqueByHQL(hql, new Object[]{txnseqno_old});
     }
     public TxnsRefundModel getRefundByRefundor(String refundorderno) {
         String hql = " from TxnsRefundModel where refundorderno=? ";
@@ -92,9 +92,21 @@ public class TxnsRefundServiceImpl extends BaseServiceImpl<TxnsRefundModel,Long>
 	 * @return
 	 */
 	@Override
+	@Transactional(readOnly=true)
 	public TxnsRefundModel getRefundByTxnseqno(String txnseqno) {
 		String hql = " from TxnsRefundModel c where c.reltxnseqno = ? ";
         return super.getUniqueByHQL(hql, new Object[]{txnseqno});
+	}
+	
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateToSuccess(String txnseqno){
+		String hql = "update TxnsRefundModel set status = ? where reltxnseqno = ?";
+		super.updateByHQL(hql, new Object[]{"00",txnseqno});
+	}
+	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+	public void updateToFailed(String txnseqno){
+		String hql = "update TxnsRefundModel set status = ? where reltxnseqno = ?";
+		super.updateByHQL(hql, new Object[]{"49",txnseqno});
 	}
     
 }

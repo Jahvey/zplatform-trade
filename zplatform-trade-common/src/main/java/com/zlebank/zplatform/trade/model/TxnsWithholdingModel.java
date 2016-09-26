@@ -18,6 +18,7 @@ import com.zlebank.zplatform.trade.bean.enums.BankEnmu;
 import com.zlebank.zplatform.trade.bean.enums.BiztypeEnum;
 import com.zlebank.zplatform.trade.bean.enums.CMBCCardTypeEnum;
 import com.zlebank.zplatform.trade.bean.enums.CertifTypeEnmu;
+import com.zlebank.zplatform.trade.bean.enums.ChanPayCertifTypeEnmu;
 import com.zlebank.zplatform.trade.bean.enums.ChannelEnmu;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
@@ -131,6 +132,42 @@ public class TxnsWithholdingModel implements java.io.Serializable {
         this.orderno = realnameAuth.getOrderId();
         this.chnlcode = ChannelEnmu.CMBCWITHHOLDING.getChnlcode();
     }
+    public TxnsWithholdingModel(PojoRealnameAuth realnameAuth,ChannelEnmu channelEnmu) {
+    	if(channelEnmu==ChannelEnmu.CHANPAYCOLLECTMONEY){
+    		this.serialno = OrderNumber.getInstance().generateRealNameOrderNo();
+            this.merid = ConsUtil.getInstance().cons.getChanpay_cj_merchant_id();
+            this.mername = ConsUtil.getInstance().cons.getChanpay_cj_merchant_name();
+            this.transdate = DateUtil.getCurrentDate();
+            this.transtime = DateUtil.getCurrentTime();
+            this.servicecode = ConsUtil.REALNAMEAUTH_CHANPAY;
+            this.cardtype = realnameAuth.getCardType();
+            this.accno = realnameAuth.getCardNo();
+            this.accname = realnameAuth.getCustomerNm();
+            this.certtype = ChanPayCertifTypeEnmu.fromValue(realnameAuth.getCertifTp()).getChanpyaCode();
+            this.certno = realnameAuth.getCertifId();
+            this.phone = realnameAuth.getPhoneNo().toString();
+            this.memberid = realnameAuth.getMerId()+"";
+            this.orderno = realnameAuth.getOrderId();
+            this.chnlcode = channelEnmu.getChnlcode();
+    	}else if(channelEnmu==ChannelEnmu.CMBCWITHHOLDING||channelEnmu==ChannelEnmu.CMBCSELFWITHHOLDING){
+    		this.serialno = OrderNumber.getInstance().generateRealNameOrderNo();
+            this.merid = ConsUtil.getInstance().cons.getCmbc_merid();
+            this.mername = ConsUtil.getInstance().cons.getCmbc_mername();
+            this.transdate = DateUtil.getCurrentDate();
+            this.transtime = DateUtil.getCurrentTime();
+            this.servicecode = ConsUtil.REALNAMEAUTH;
+            this.cardtype = CMBCCardTypeEnum.fromCardType(realnameAuth.getCardType()).getCode();
+            this.accno = realnameAuth.getCardNo();
+            this.accname = realnameAuth.getCustomerNm();
+            this.certtype = CertifTypeEnmu.fromValue(realnameAuth.getCertifTp()).getCmbcCode();
+            this.certno = realnameAuth.getCertifId();
+            this.phone = realnameAuth.getPhoneNo().toString();
+            this.memberid = realnameAuth.getMerId()+"";
+            this.orderno = realnameAuth.getOrderId();
+            this.chnlcode = channelEnmu.getChnlcode();
+    	}
+        
+    }
     
     public TxnsWithholdingModel(String bankinscode,String bankname,String bankaccno,String bankaccname,String bankacctype,String certtype,String certno,String mobile) {
         this.serialno = OrderNumber.getInstance().generateRealNameOrderNo();
@@ -152,10 +189,35 @@ public class TxnsWithholdingModel implements java.io.Serializable {
         this.chnlcode = ChannelEnmu.CMBCWITHHOLDING.getChnlcode();
     }
     
+    public TxnsWithholdingModel(String bankinscode,String bankname,String bankaccno,String bankaccname,String bankacctype,String certtype,String certno,String mobile,ChannelEnmu channelEnmu) {
+    	if(channelEnmu==ChannelEnmu.CHANPAYCOLLECTMONEY){
+    		this.serialno = OrderNumber.getInstance().generateRealNameOrderNo();
+	        this.merid = ConsUtil.getInstance().cons.getChanpay_cj_merchant_id();
+	        this.mername = ConsUtil.getInstance().cons.getChanpay_cj_merchant_name();
+	        this.transdate = DateUtil.getCurrentDate();
+	        this.transtime = DateUtil.getCurrentTime();
+	        this.servicecode = ConsUtil.PROTOCOLSIGN_CHANPAY;
+	        this.cardtype = bankacctype;
+	        this.accno = bankaccno;
+	        this.accname = bankaccname;
+	        this.certtype = certtype;
+	        this.certno = certno;
+	        this.phone = mobile;
+	        this.memberid = "";
+	        this.orderno = "";
+	        this.payerbankinscode=bankinscode;
+	        this.payerbankname = bankname;
+	        this.chnlcode = channelEnmu.getChnlcode();
+    	}
+       
+    }
+    
+    
+    
     public TxnsWithholdingModel(String oritransdate,String orireqserialno,String txnseqno,ChannelEnmu channel) {
         switch (channel) {
             case CMBCWITHHOLDING :
-                this.serialno = OrderNumber.getInstance().generateRealNameOrderNo();
+                this.serialno = OrderNumber.getInstance().generateWithholdingQueryOrderNo();
                 this.merid = ConsUtil.getInstance().cons.getCmbc_merid();
                 this.mername = ConsUtil.getInstance().cons.getCmbc_mername();
                 this.transdate = DateUtil.getCurrentDate();
@@ -243,6 +305,37 @@ public class TxnsWithholdingModel implements java.io.Serializable {
                 this.txnseqno = trade.getTxnseqno();
                 this.chnlcode = ChannelEnmu.CMBCSELFWITHHOLDING.getChnlcode();
                 break;
+                
+            case CHANPAYCOLLECTMONEY:
+            	this.merid = ConsUtil.getInstance().cons.getChanpay_cj_merchant_id();
+                this.mername = ConsUtil.getInstance().cons.getChanpay_cj_merchant_name();
+                this.transdate = DateUtil.getCurrentDate();
+                this.transtime = DateUtil.getCurrentTime();;
+                this.servicecode = ConsUtil.WITHHOLDING_CHANPAY;
+                this.cardtype = trade.getCardType();
+                this.accno = trade.getCardNo();
+                this.accname = trade.getAcctName();
+                this.certtype = ChanPayCertifTypeEnmu.fromValue("01").getChanpyaCode();
+                this.certno = trade.getCertId();
+                this.phone = trade.getMobile();
+                this.payerbankinscode = trade.getBankCode();
+                this.provno = trade.getProvno();
+                this.memberid = trade.getMerchId();
+                this.orderno = trade.getOrderId();
+                this.payerbankname = trade.getBankName();
+               // this.cvn2 = StringUtil.isEmpty(trade.getCvv2())?"":trade.getCvv2();
+               // this.expired = (StringUtil.isEmpty(trade.getMonth())?"":trade.getMonth())+(StringUtil.isEmpty(trade.getYear())?"":trade.getYear());
+                this.biztype = ConsUtil.getInstance().cons.getChanpay_cj_business_code();
+                this.bizno = ConsUtil.getInstance().cons.getChanpay_cj_product_no();
+               // this.bizobjtype = "00";
+                this.tranamt = new BigDecimal(Long.valueOf(trade.getAmount()));
+                this.currency = "RMB";
+                this.purpose = "代收业务";
+                this.cityno = "";
+                this.agtno = trade.getBindCardId();
+                this.txnseqno = trade.getTxnseqno();
+                this.chnlcode = ChannelEnmu.CHANPAYCOLLECTMONEY.getChnlcode();
+            	break;
         }
         
     }

@@ -23,5 +23,5 @@ public interface NotifyInsteadURLService {
      * 增加一个代付任务
      * @param batchId
      */
-    public void addInsteadPayTask(Long batchId);
+	public void addInsteadPayTask(Long batchId);
 }

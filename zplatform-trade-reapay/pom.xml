@@ -3,10 +3,10 @@
 	<parent>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-deploy</artifactId>
-		<version>1.3.1-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 		<relativePath>../zplatform-trade-deploy/pom.xml</relativePath>
 	</parent>
-	<artifactId>zplatform-trade-reapay</artifactId> 
+	<artifactId>zplatform-trade-reapay</artifactId>
 	<packaging>jar</packaging>
 
 	<name>zplatform-trade-reapay</name>
@@ -17,15 +17,29 @@
 	</properties>
 
 	<dependencies>
+		
+		<!-- <dependency> <groupId>com.zlebank.zplatform</groupId> <artifactId>jce-jdk13</artifactId> 
+			<version>136</version> </dependency> -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.52</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.3.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.3.3</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
-			<artifactId>zplatform-trade-common</artifactId>
-			<version>1.3.1-SNAPSHOT</version>
-		</dependency> 
-		<dependency>
-			<groupId>com.zlebank.zplatform</groupId>
-			<artifactId>jce-jdk13</artifactId>
-			<version>136</version>
+			<artifactId>zplatform-trade-acc</artifactId>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>

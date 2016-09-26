@@ -179,6 +179,7 @@ public class BossPayInsteadPayServiceImpl implements BossInsteadPayService{
 	 * @param resultList
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	@Override
 	@Transactional
 	public boolean dealWithResult(String serialNum,List<BtchpmtResultBean> resultList) {

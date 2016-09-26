@@ -1,3 +1,4 @@
+
 package com.zlebank.zplatform.trade.utils;
 
 public class ConsModel {
@@ -116,10 +117,45 @@ public class ConsModel {
 	private String wechat_notify_url="";
 	
 	private int is_junit=0;
+	private int refund_day=180;
+	private String chanpay_cj_merchant_id="";
+	private String chanpay_cj_merchant_name="";
+	private String chanpay_cj_business_code="";
+	private String chanpay_cj_account_no="";
+	private String chanpay_cj_product_no="";
+	
+	/***标准收银台**/
+	private String web_cash_url="";
 	
 	
+
+	/**微信扫描支付参数**/
+	private String wechat_qr_create_order_url="";
+	private String wechat_qr_down_load_bill_url="";
+	private String wechat_qr_refund_url="";
+	private String wechat_qr_refund_query_url="";
+	private String wechat_qr_query_trade_url="";
+	private String wechat_qr_key="";
+	private String wechat_qr_appID="";
+	private String wechat_qr_mchID="";
+	private String wechat_qr_cerUrl="";
+	private String wechat_qr_notify_url="";
+	private int wechat_qr_overtime=60000;
+	private String wechat_qr_close_order_url="";
+	private String wechat_qr_short_url="";
 	
 	
+	private String zlebank_coopinsti_code;
+	
+	
+	public String getWeb_cash_url() {
+		return web_cash_url;
+	}
+
+	public void setWeb_cash_url(String web_cash_url) {
+		this.web_cash_url = web_cash_url;
+	}
+
 	public String getZlrt_url() {
 		return zlrt_url;
 	}
@@ -1360,6 +1396,285 @@ public class ConsModel {
 		this.is_junit = is_junit;
 	}
 
+	/**
+	 * @return the refund_day
+	 */
+	public int getRefund_day() {
+		return refund_day;
+	}
+
+	/**
+	 * @param refund_day the refund_day to set
+	 */
+	public void setRefund_day(int refund_day) {
+		this.refund_day = refund_day;
+	}
+
+	/**
+	 * @return the chanpay_cj_merchant_id
+	 */
+	public String getChanpay_cj_merchant_id() {
+		return chanpay_cj_merchant_id;
+	}
+
+	/**
+	 * @param chanpay_cj_merchant_id the chanpay_cj_merchant_id to set
+	 */
+	public void setChanpay_cj_merchant_id(String chanpay_cj_merchant_id) {
+		this.chanpay_cj_merchant_id = chanpay_cj_merchant_id;
+	}
+
+	/**
+	 * @return the chanpay_cj_merchant_name
+	 */
+	public String getChanpay_cj_merchant_name() {
+		return chanpay_cj_merchant_name;
+	}
+
+	/**
+	 * @param chanpay_cj_merchant_name the chanpay_cj_merchant_name to set
+	 */
+	public void setChanpay_cj_merchant_name(String chanpay_cj_merchant_name) {
+		this.chanpay_cj_merchant_name = chanpay_cj_merchant_name;
+	}
+
+	/**
+	 * @return the chanpay_cj_business_code
+	 */
+	public String getChanpay_cj_business_code() {
+		return chanpay_cj_business_code;
+	}
+
+	/**
+	 * @param chanpay_cj_business_code the chanpay_cj_business_code to set
+	 */
+	public void setChanpay_cj_business_code(String chanpay_cj_business_code) {
+		this.chanpay_cj_business_code = chanpay_cj_business_code;
+	}
+
+	/**
+	 * @return the chanpay_cj_account_no
+	 */
+	public String getChanpay_cj_account_no() {
+		return chanpay_cj_account_no;
+	}
+
+	/**
+	 * @param chanpay_cj_account_no the chanpay_cj_account_no to set
+	 */
+	public void setChanpay_cj_account_no(String chanpay_cj_account_no) {
+		this.chanpay_cj_account_no = chanpay_cj_account_no;
+	}
+
+	/**
+	 * @return the chanpay_cj_product_no
+	 */
+	public String getChanpay_cj_product_no() {
+		return chanpay_cj_product_no;
+	}
+
+	/**
+	 * @param chanpay_cj_product_no the chanpay_cj_product_no to set
+	 */
+	public void setChanpay_cj_product_no(String chanpay_cj_product_no) {
+		this.chanpay_cj_product_no = chanpay_cj_product_no;
+	}
+
+	/**
+	 * @return the wechat_qr_create_order_url
+	 */
+	public String getWechat_qr_create_order_url() {
+		return wechat_qr_create_order_url;
+	}
+
+	/**
+	 * @param wechat_qr_create_order_url the wechat_qr_create_order_url to set
+	 */
+	public void setWechat_qr_create_order_url(String wechat_qr_create_order_url) {
+		this.wechat_qr_create_order_url = wechat_qr_create_order_url;
+	}
+
+	/**
+	 * @return the wechat_qr_down_load_bill_url
+	 */
+	public String getWechat_qr_down_load_bill_url() {
+		return wechat_qr_down_load_bill_url;
+	}
+
+	/**
+	 * @param wechat_qr_down_load_bill_url the wechat_qr_down_load_bill_url to set
+	 */
+	public void setWechat_qr_down_load_bill_url(String wechat_qr_down_load_bill_url) {
+		this.wechat_qr_down_load_bill_url = wechat_qr_down_load_bill_url;
+	}
+
+	/**
+	 * @return the wechat_qr_refund_url
+	 */
+	public String getWechat_qr_refund_url() {
+		return wechat_qr_refund_url;
+	}
+
+	/**
+	 * @param wechat_qr_refund_url the wechat_qr_refund_url to set
+	 */
+	public void setWechat_qr_refund_url(String wechat_qr_refund_url) {
+		this.wechat_qr_refund_url = wechat_qr_refund_url;
+	}
+
+	/**
+	 * @return the wechat_qr_refund_query_url
+	 */
+	public String getWechat_qr_refund_query_url() {
+		return wechat_qr_refund_query_url;
+	}
+
+	/**
+	 * @param wechat_qr_refund_query_url the wechat_qr_refund_query_url to set
+	 */
+	public void setWechat_qr_refund_query_url(String wechat_qr_refund_query_url) {
+		this.wechat_qr_refund_query_url = wechat_qr_refund_query_url;
+	}
+
+	/**
+	 * @return the wechat_qr_query_trade_url
+	 */
+	public String getWechat_qr_query_trade_url() {
+		return wechat_qr_query_trade_url;
+	}
+
+	/**
+	 * @param wechat_qr_query_trade_url the wechat_qr_query_trade_url to set
+	 */
+	public void setWechat_qr_query_trade_url(String wechat_qr_query_trade_url) {
+		this.wechat_qr_query_trade_url = wechat_qr_query_trade_url;
+	}
+
+	/**
+	 * @return the wechat_qr_key
+	 */
+	public String getWechat_qr_key() {
+		return wechat_qr_key;
+	}
+
+	/**
+	 * @param wechat_qr_key the wechat_qr_key to set
+	 */
+	public void setWechat_qr_key(String wechat_qr_key) {
+		this.wechat_qr_key = wechat_qr_key;
+	}
+
+	/**
+	 * @return the wechat_qr_appID
+	 */
+	public String getWechat_qr_appID() {
+		return wechat_qr_appID;
+	}
+
+	/**
+	 * @param wechat_qr_appID the wechat_qr_appID to set
+	 */
+	public void setWechat_qr_appID(String wechat_qr_appID) {
+		this.wechat_qr_appID = wechat_qr_appID;
+	}
+
+	/**
+	 * @return the wechat_qr_mchID
+	 */
+	public String getWechat_qr_mchID() {
+		return wechat_qr_mchID;
+	}
+
+	/**
+	 * @param wechat_qr_mchID the wechat_qr_mchID to set
+	 */
+	public void setWechat_qr_mchID(String wechat_qr_mchID) {
+		this.wechat_qr_mchID = wechat_qr_mchID;
+	}
+
+	/**
+	 * @return the wechat_qr_cerUrl
+	 */
+	public String getWechat_qr_cerUrl() {
+		return wechat_qr_cerUrl;
+	}
+
+	/**
+	 * @param wechat_qr_cerUrl the wechat_qr_cerUrl to set
+	 */
+	public void setWechat_qr_cerUrl(String wechat_qr_cerUrl) {
+		this.wechat_qr_cerUrl = wechat_qr_cerUrl;
+	}
+
+	/**
+	 * @return the wechat_qr_notify_url
+	 */
+	public String getWechat_qr_notify_url() {
+		return wechat_qr_notify_url;
+	}
+
+	/**
+	 * @param wechat_qr_notify_url the wechat_qr_notify_url to set
+	 */
+	public void setWechat_qr_notify_url(String wechat_qr_notify_url) {
+		this.wechat_qr_notify_url = wechat_qr_notify_url;
+	}
+
+	/**
+	 * @return the wechat_qr_overtime
+	 */
+	public int getWechat_qr_overtime() {
+		return wechat_qr_overtime;
+	}
+
+	/**
+	 * @param wechat_qr_overtime the wechat_qr_overtime to set
+	 */
+	public void setWechat_qr_overtime(int wechat_qr_overtime) {
+		this.wechat_qr_overtime = wechat_qr_overtime;
+	}
+
+	/**
+	 * @return the wechat_qr_close_order_url
+	 */
+	public String getWechat_qr_close_order_url() {
+		return wechat_qr_close_order_url;
+	}
+
+	/**
+	 * @param wechat_qr_close_order_url the wechat_qr_close_order_url to set
+	 */
+	public void setWechat_qr_close_order_url(String wechat_qr_close_order_url) {
+		this.wechat_qr_close_order_url = wechat_qr_close_order_url;
+	}
+
+	/**
+	 * @return the wechat_qr_short_url
+	 */
+	public String getWechat_qr_short_url() {
+		return wechat_qr_short_url;
+	}
+
+	/**
+	 * @param wechat_qr_short_url the wechat_qr_short_url to set
+	 */
+	public void setWechat_qr_short_url(String wechat_qr_short_url) {
+		this.wechat_qr_short_url = wechat_qr_short_url;
+	}
+
+	/**
+	 * @return the zlebank_coopinsti_code
+	 */
+	public String getZlebank_coopinsti_code() {
+		return zlebank_coopinsti_code;
+	}
+
+	/**
+	 * @param zlebank_coopinsti_code the zlebank_coopinsti_code to set
+	 */
+	public void setZlebank_coopinsti_code(String zlebank_coopinsti_code) {
+		this.zlebank_coopinsti_code = zlebank_coopinsti_code;
+	}
 	
 	
 	

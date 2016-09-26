@@ -137,6 +137,7 @@
 						<input type="hidden" name="amount"    value="${trade.amount}" />
 						<input type="hidden" name="txnseqno"  value="${trade.txnseqno}" />
 						<input type="hidden" name="merchId"   value="${trade.merchId }" />
+						<input type="hidden" name="subMerchId" value="${trade.subMerchId }" />
 						<input type="hidden" name="cashCode"  value="${trade.cashCode }" />
 						<input type="hidden" name="busicode"  value="${trade.busicode }" />
 						<input type="hidden" name="goodsName" value="${trade.goodsName }" />

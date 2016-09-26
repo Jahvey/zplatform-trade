@@ -62,7 +62,7 @@ public class TxnsWithdrawServiceImpl extends BaseServiceImpl<TxnsWithdrawModel, 
         }
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveWithdraw(TxnsWithdrawModel withdraw){
     	String txnseqno = withdraw.getTexnseqno();
     	TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
@@ -73,7 +73,7 @@ public class TxnsWithdrawServiceImpl extends BaseServiceImpl<TxnsWithdrawModel, 
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateWithdrawResult(TxnsWithdrawModel withdraw){
         String hql = "update TxnsWithdrawModel set finishtime = ?,status = ?,retcode = ?,retinfo = ? where withdraworderno = ? and memberid = ? ";
         super.updateByHQL(hql, new Object[]{withdraw.getFinishtime(),withdraw.getStatus(),withdraw.getRetcode(),withdraw.getRetinfo(),withdraw.getWithdraworderno(),withdraw.getMemberid()});

@@ -21,6 +21,7 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -124,7 +125,11 @@ public class AccountRefundTrade implements IRefundTrade {
         } catch (NumberFormatException e) {
             resultBean = new ResultBean("T099", e.getMessage());
             e.printStackTrace();
-        }
+        } catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+        	resultBean = new ResultBean(e.getCode(), e.getMessage());
+			e.printStackTrace();
+		}
         
         if(resultBean.isResultBool()){
         	updateRefundResult( txnsLog.getTxnseqno(),"","0000","交易成功");
@@ -147,7 +152,7 @@ public class AccountRefundTrade implements IRefundTrade {
 	@Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
 	public String updateRefund(String txnseqno,String memberId){
 		TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
-        txnsLog.setPaytype("03"); //支付类型（01：快捷，02：网银，03：账户）
+        txnsLog.setPaytype("07"); //支付类型（01：快捷，02：网银，03：账户,07：退款）
         txnsLog.setPayordno(OrderNumber.getInstance().generateAppOrderNo());//支付定单号
         txnsLog.setPayinst("99999999");//支付所属机构
         txnsLog.setPayfirmerno(memberId);//支付一级商户号-个人会员

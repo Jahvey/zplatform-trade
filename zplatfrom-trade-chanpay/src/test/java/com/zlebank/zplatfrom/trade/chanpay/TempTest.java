@@ -1,5 +1,10 @@
 package com.zlebank.zplatfrom.trade.chanpay;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -263,4 +268,58 @@ public class TempTest {
 		TempTest test = new TempTest();
 		test.sm();
 	}
+    
+    
+   /* public static void main(String[] args) {
+		readReconFile("E:/recFile/rec_201506.txt");
+	}*/
+    public static void readReconFile(String url ){
+    	FileInputStream fis= null;
+    	InputStreamReader isr= null;
+    	 BufferedReader reader=null;
+    	try {
+    		File file= new File(url);
+    		fis = new FileInputStream(file);
+            isr = new InputStreamReader(fis,"UTF8"); //指定以编码读入
+            reader = new BufferedReader(isr);//2 成功则表明能读取到文件
+    		String tempString = null;
+        	int line = 0;
+    		boolean isFileComplete = false;//文件 是否完整 初始化为否
+    		//内容
+    		List<Map<String, Object>>cotextList= new ArrayList<Map<String,Object>>();
+    		Map<String,Object>head = new HashMap<String,Object>();
+    		// 一次读入一行，直到读入null为文件结束
+            while ((tempString = reader.readLine()) != null&&!tempString.trim().equals("")) {
+            	System.out.println("line " + line + ": " + tempString);
+                String[] temps = tempString.split("\\|",-1);
+                //第一行汇总
+                if(line==0){
+                	//校验
+                	
+                //明细
+                }else{
+                	
+                }
+                line++;
+            }
+            
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally{
+				try {
+					if(fis!=null){
+					fis.close();
+					}
+					if(isr!=null){
+						isr.close();
+					}
+					if(reader!=null){
+						reader.close();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			
+		}
+    }
 }

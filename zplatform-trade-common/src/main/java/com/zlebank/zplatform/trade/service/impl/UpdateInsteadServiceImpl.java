@@ -1,23 +1,4 @@
 /* 
-haod	支付			
-姓名	郭佳			
-日期	2016年5月23日			
-				
-当日工作计划				
-序号	时长(时)	工作描述	优先级	备注
-1	7	集成畅捷支付代付代码	高	
-				
-当日工作总结				
-序号	时长(时)	工作描述	优先级	备注
-1	7.5	开发退款功能，测试退款，修改生成退款订单的方法，修改测试中出现的bug	中	
-				
-				
-问题情况				
-序号	问题描述		优先级	备注
-				
-次日工作计划				
-序号	时长(时)	工作描述	优先级	备注
-1	8	集成畅捷支付代付代码编写各个接口的单元测试程序	高	
  * UpdateInsteadServiceImpl.java  
  * 
  * version TODO
@@ -30,7 +11,6 @@ haod	支付
 package com.zlebank.zplatform.trade.service.impl;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import net.sf.json.JSONObject;
 
@@ -47,6 +27,7 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -54,7 +35,6 @@ import com.zlebank.zplatform.member.dao.CoopInstiDAO;
 import com.zlebank.zplatform.member.pojo.PojoCoopInsti;
 import com.zlebank.zplatform.member.pojo.PojoMember;
 import com.zlebank.zplatform.member.service.MemberService;
-import com.zlebank.zplatform.trade.bean.AppPartyBean;
 import com.zlebank.zplatform.trade.bean.UpdateData;
 import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 import com.zlebank.zplatform.trade.bean.enums.InsteadPayBatchStatusEnum;
@@ -113,10 +93,10 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
     public void update(UpdateData data) {
     	log.info("代付账务处理开始，交易序列号:"+data.getTxnSeqNo());
     	log.info("Parameter:"+JSONObject.fromObject(data).toString());
-        List<UpdateSubject> observerList = ObserverListService.getInstance().getObserverList();
+        /*List<UpdateSubject> observerList = ObserverListService.getInstance().getObserverList();
         for (UpdateSubject subject : observerList) {
         	log.info(subject.getBusiCode());
-        }
+        }*/
         PojoInsteadPayDetail detail = insteadPayDetailDAO.getDetailByTxnseqno(data.getTxnSeqNo());
         if (detail == null) {
             log.error("没有找到需要记账的流水");
@@ -134,6 +114,9 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
         }else if("02".equals(data.getResultCode())){//转账拒绝
         	detail.setRespCode("02");
             detail.setStatus(InsteadPayDetailStatusEnum.BANK_TRAN_REFUSE.getCode());
+        }else if("04".equals(data.getResultCode())){//退汇
+        	detail.setRespCode("04");
+            detail.setStatus(InsteadPayDetailStatusEnum.TRAN_FAILED.getCode());
         }
         detail.setRespMsg(data.getResultMessage());
         insteadPayDetailDAO.merge(detail);
@@ -156,13 +139,18 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
         	tradeInfo.setBusiCode("70000001");
             entryEvent = EntryEvent.AUDIT_REJECT;
             log.info("代付审核拒绝，交易序列号:"+data.getTxnSeqNo());
+        }else if("04".equals(data.getResultCode())){
+        	tradeInfo.setBusiCode("70000001");
+        	tradeInfo.setChannelFee(data.getChannelFee());
+        	 tradeInfo.setChannelId(data.getChannelCode());
+        	entryEvent = EntryEvent.REFUND_EXCHANGE;
+        	 log.info("代付退汇，交易序列号:"+data.getTxnSeqNo());
         }else {
             tradeInfo.setBusiCode("70000001");
             entryEvent = EntryEvent.TRADE_FAIL;
             log.info("代付交易失败，交易序列号:"+data.getTxnSeqNo());
         }
         TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(data.getTxnSeqNo());
-       
     	try {
 			log.info("账务处理数据："+JSON.toJSONString(tradeInfo));
 			String commiteTime = DateUtil.getCurrentDateTime();
@@ -175,6 +163,10 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
                 txnsLog.setAppordcommitime(commiteTime);
                 txnsLog.setAppordfintime(DateUtil.getCurrentDateTime());
                 txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
+                if("00".equals(data.getResultCode())) {
+                	tradeInfo.setChannelFee(new BigDecimal(0));
+                	accEntryService.accEntryProcess(tradeInfo, EntryEvent.RECON_SUCCESS);
+                }
 			}
 		} catch (AccBussinessException e1) {
 			// TODO Auto-generated catch block
@@ -196,6 +188,19 @@ public class UpdateInsteadServiceImpl implements UpdateInsteadService, UpdateSub
 			if(txnsLog!=null){
 				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
 				txnsLog.setApporderinfo(e1.getMessage());
+			}
+		} catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
+			}
+		}catch (Exception e) {
+			e.printStackTrace();
+			if(txnsLog!=null){
+				txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+				txnsLog.setApporderinfo(e.getMessage());
 			}
 		}
     	if(txnsLog!=null){

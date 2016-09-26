@@ -60,6 +60,7 @@ public class TxnsOrderinfoModel implements java.io.Serializable {
     private String accesstype;
     private String currencycode="156";
     private String memberid;
+    private String productcode;
     // Constructors
 
     /** default constructor */
@@ -556,6 +557,21 @@ public class TxnsOrderinfoModel implements java.io.Serializable {
 	 */
 	public void setMemberid(String memberid) {
 		this.memberid = memberid;
+	}
+
+	/**
+	 * @return the productcode
+	 */
+	@Column(name = "PRODUCTCODE")
+	public String getProductcode() {
+		return productcode;
+	}
+
+	/**
+	 * @param productcode the productcode to set
+	 */
+	public void setProductcode(String productcode) {
+		this.productcode = productcode;
 	}
 
 	

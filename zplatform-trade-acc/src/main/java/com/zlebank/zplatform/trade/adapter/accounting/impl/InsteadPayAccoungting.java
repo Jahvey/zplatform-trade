@@ -1,24 +1,18 @@
+
 package com.zlebank.zplatform.trade.adapter.accounting.impl;
 
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.zlebank.zplatform.acc.bean.TradeInfo;
-import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.trade.adapter.accounting.IAccounting;
 import com.zlebank.zplatform.trade.bean.ResultBean;
-import com.zlebank.zplatform.trade.dao.InsteadPayDetailDAO;
-import com.zlebank.zplatform.trade.dao.TransferBatchDAO;
-import com.zlebank.zplatform.trade.dao.TransferDataDAO;
 import com.zlebank.zplatform.trade.model.PojoTranBatch;
 import com.zlebank.zplatform.trade.model.PojoTranData;
-import com.zlebank.zplatform.trade.service.ITxnsLogService;
-import com.zlebank.zplatform.trade.utils.SpringContext;
 
 
 public class InsteadPayAccoungting implements IAccounting{
     
-    private TransferBatchDAO transferBatchDAO;
+    /*private TransferBatchDAO transferBatchDAO;
     private TransferDataDAO transferDataDAO;
     private AccEntryService accEntryService;
     private InsteadPayDetailDAO insteadPayDetailDAO;
@@ -31,7 +25,7 @@ public class InsteadPayAccoungting implements IAccounting{
         insteadPayDetailDAO = (InsteadPayDetailDAO) SpringContext.getContext().getBean("insteadPayDetailDAO");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
     }
-
+*/
     @Override
     public ResultBean accountedFor(String txnseqno) {
         return null;
@@ -100,7 +94,7 @@ public class InsteadPayAccoungting implements IAccounting{
     }
     
     
-    private TradeInfo initAccountingData(PojoTranData transferData,PojoTranBatch transferBatch){
+    //private TradeInfo initAccountingData(PojoTranData transferData,PojoTranBatch transferBatch){
        /* String txnseqno = transferData.getTxnseqno();
         *//**支付订单号**//*
         String payordno = transferData.getRelatedorderno();
@@ -142,7 +136,7 @@ public class InsteadPayAccoungting implements IAccounting{
        
         TradeInfo tradeInfo = new TradeInfo(txnseqno, payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
         return tradeInfo;*/
-    	return null;
-    }
+    	//return null;
+    //}
 
 }

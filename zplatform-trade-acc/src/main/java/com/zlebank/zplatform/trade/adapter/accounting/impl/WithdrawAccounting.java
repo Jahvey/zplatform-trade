@@ -1,19 +1,13 @@
+
 package com.zlebank.zplatform.trade.adapter.accounting.impl;
 
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.zlebank.zplatform.acc.bean.TradeInfo;
-import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.trade.adapter.accounting.IAccounting;
 import com.zlebank.zplatform.trade.bean.ResultBean;
-import com.zlebank.zplatform.trade.dao.TransferBatchDAO;
-import com.zlebank.zplatform.trade.dao.TransferDataDAO;
 import com.zlebank.zplatform.trade.model.PojoTranBatch;
 import com.zlebank.zplatform.trade.model.PojoTranData;
-import com.zlebank.zplatform.trade.service.ITxnsLogService;
-import com.zlebank.zplatform.trade.service.ITxnsWithdrawService;
-import com.zlebank.zplatform.trade.utils.SpringContext;
 /**
  * 
  * Class Description
@@ -24,7 +18,7 @@ import com.zlebank.zplatform.trade.utils.SpringContext;
  * @since
  */
 public class WithdrawAccounting implements IAccounting{
-    private TransferBatchDAO transferBatchDAO;
+    /*private TransferBatchDAO transferBatchDAO;
     private TransferDataDAO transferDataDAO;
     private AccEntryService accEntryService;
     private ITxnsWithdrawService txnsWithdrawService;
@@ -37,7 +31,7 @@ public class WithdrawAccounting implements IAccounting{
         txnsWithdrawService =  (ITxnsWithdrawService) SpringContext.getContext().getBean("txnsWithdrawService");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
     }
-    
+    */
     
     @Override
     public ResultBean accountedFor(String txnseqno) {
@@ -107,7 +101,7 @@ public class WithdrawAccounting implements IAccounting{
     }
     
     
-    private TradeInfo initAccountingData(PojoTranData transferData,PojoTranBatch transferBatch){
+    //private TradeInfo initAccountingData(PojoTranData transferData,PojoTranBatch transferBatch){
         /*String txnseqno = transferData.getTxnseqno();
         *//**支付订单号**//*
         String payordno = transferData.getRelatedorderno();
@@ -148,6 +142,6 @@ public class WithdrawAccounting implements IAccounting{
         txnsLogService.updateAccBusiCode(txnseqno, busiCode);
         TradeInfo tradeInfo = new TradeInfo(txnseqno, payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
         return tradeInfo;*/
-    	return null;
-    }
+    	//return null;
+   // }
 }

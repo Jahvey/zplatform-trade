@@ -189,7 +189,7 @@ public class FTPCMBCService implements IFTPCMBCService {
                         }
                         break;
                     case REEXCHANGE:
-                        if(ftpFiles[i].getName().indexOf("reexchange_"+date)>=0){
+                        if(ftpFiles[i].getName().indexOf("reexchange_")>=0){
                             fileNameList.add(path+"/"+ftpFiles[i].getName());
                         }
                         break;

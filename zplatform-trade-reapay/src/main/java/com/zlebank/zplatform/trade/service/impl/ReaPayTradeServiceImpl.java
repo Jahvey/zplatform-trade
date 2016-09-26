@@ -14,6 +14,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
@@ -199,6 +200,7 @@ public class ReaPayTradeServiceImpl implements IReaPayTradeService{
             log.info("recive reapay decryptData message:"+res);
             ReaPayResultBean reaPayResultBean = ReaPayTradeAnalyzer.generatePayResultBean(JSON.parseObject(res));
             resultBean = new ResultBean(reaPayResultBean);
+            resultBean.setErrCode(reaPayResultBean.getStatus());
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

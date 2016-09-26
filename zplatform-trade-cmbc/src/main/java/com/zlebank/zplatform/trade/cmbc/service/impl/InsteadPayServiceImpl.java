@@ -17,6 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,11 +33,11 @@ import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.trade.bean.UpdateData;
+import com.zlebank.zplatform.trade.bean.cmbc.ReexchangeBean;
 import com.zlebank.zplatform.trade.bean.enums.InsteadPayTypeEnum;
 import com.zlebank.zplatform.trade.cmbc.bean.InsteadPayBean;
 import com.zlebank.zplatform.trade.cmbc.bean.RealTimePayBean;
 import com.zlebank.zplatform.trade.cmbc.bean.RealTimeQueryBean;
-import com.zlebank.zplatform.trade.cmbc.bean.ReexchangeBean;
 import com.zlebank.zplatform.trade.cmbc.bean.enmus.FileTypeEnmu;
 import com.zlebank.zplatform.trade.cmbc.bean.gateway.InsteadPayMessageBean;
 import com.zlebank.zplatform.trade.cmbc.exception.CMBCTradeException;
@@ -47,12 +48,14 @@ import com.zlebank.zplatform.trade.cmbc.service.IFTPCMBCService;
 import com.zlebank.zplatform.trade.cmbc.service.IInsteadPayService;
 import com.zlebank.zplatform.trade.dao.BankTransferBatchDAO;
 import com.zlebank.zplatform.trade.dao.BankTransferDataDAO;
+import com.zlebank.zplatform.trade.dao.CMBCResfileLogDAO;
 import com.zlebank.zplatform.trade.dao.ITxnsInsteadPayDAO;
 import com.zlebank.zplatform.trade.dao.TransferBatchDAO;
 import com.zlebank.zplatform.trade.dao.TransferDataDAO;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.model.PojoBankTransferBatch;
 import com.zlebank.zplatform.trade.model.PojoBankTransferData;
+import com.zlebank.zplatform.trade.model.PojoCMBCResfileLog;
 import com.zlebank.zplatform.trade.model.PojoTranData;
 import com.zlebank.zplatform.trade.model.PojoTxnsInsteadPay;
 import com.zlebank.zplatform.trade.model.TxnsLogModel;
@@ -72,6 +75,9 @@ import com.zlebank.zplatform.trade.utils.OrderNumber;
 @Service("insteadPayService")
 public class InsteadPayServiceImpl implements IInsteadPayService {
     private static final Log log = LogFactory.getLog(InsteadPayServiceImpl.class);
+    private static final String Key = ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5(); //"1234567887654321";
+    private static String SecretFilePath = ConsUtil.getInstance().cons.getCmbc_secretfilepath();//"D:\\cmbc\\secret.txt";
+    private static final String ENCODE = "GBK";
     @Autowired
     private IFTPCMBCService ftpcmbcService;
     @Autowired
@@ -80,15 +86,15 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
     private TransferBatchDAO transferBatchDAO;
     @Autowired
     private ITxnsLogService txnsLogService;
-    private static final String Key = ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5(); //"1234567887654321";
-    private static String SecretFilePath = ConsUtil.getInstance().cons.getCmbc_secretfilepath();//"D:\\cmbc\\secret.txt";
-    private static final String ENCODE = "GBK";
+    
     @Autowired
     private BankTransferBatchDAO bankTransferBatchDAO;
     @Autowired
     private BankTransferDataDAO bankTransferDataDAO;
     @Autowired
     private ITxnsInsteadPayDAO txnsInsteadPayDAO;
+    @Autowired
+    private CMBCResfileLogDAO cmbcResfileLogDAO;
     
     /**
      * 批量代付(跨行)
@@ -107,7 +113,7 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
         List<PojoBankTransferData> transferDataList =  bankTransferDataDAO.findTransDataByBatchNo(batchNo);
         //判断代付交易流水中师傅已经上传过文件
         if(txnsInsteadPayDAO.isUpload(batchNo+"")){
-        	throw new TradeException("");
+        	throw new TradeException("T000","代付流水文件已上传");
         }
         Long sumAmt = 0L;
         Long sumItem = 0L;
@@ -181,7 +187,7 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
 			e.printStackTrace();
 			PojoTxnsInsteadPay txnsInsteadPay = new PojoTxnsInsteadPay(batchNo+"", transferBatch.getChannel().getBankChannelCode(), "01", fileName, resFileName, new Date(), null, "01", "");
 	        txnsInsteadPayDAO.saveA(txnsInsteadPay);
-	        return ;
+	        throw new TradeException("T000","FTP客户连接失败");
 		}
         //修改批次状态为正在支付
         bankTransferBatchDAO.updateBatchTranStatus(batchNo, "05");
@@ -360,11 +366,11 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
         }
     }
     
-    private void analyzeResFile(File file,String fileName) throws NumberFormatException, IOException{
+    @SuppressWarnings("resource")
+	private void analyzeResFile(File file,String fileName) throws NumberFormatException, IOException{
         if(file.isFile() && file.exists()) { 
             //判断文件是否存在
             InputStreamReader read = new InputStreamReader(new FileInputStream(file), ENCODE);// 考虑到编码格式
-            @SuppressWarnings("resource")
 			BufferedReader bufferedReader = new BufferedReader(read);
             String lineTxt = null;
             int i = 0;
@@ -373,6 +379,7 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
             long sumAmt = 0;//总金额
             long succAmt = 0;//成功金额
             List<PojoBankTransferData> resultList = new ArrayList<PojoBankTransferData>();
+            List<PojoCMBCResfileLog> cmbcResfileList = new ArrayList<PojoCMBCResfileLog>();
             while ((lineTxt = bufferedReader.readLine()) != null) {
                 if(i==0){
                     //0    1        2       3           4
@@ -395,7 +402,9 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
                 //第三方流水号|银行流水号|帐号|户名|金额|付款结果|失败返回码|失败原因|付款日期|付款时间
                 String[] body = lineTxt.split("\\|");
                 PojoBankTransferData resultBean = new PojoBankTransferData(body);
+                PojoCMBCResfileLog cmbcResfileLog = new PojoCMBCResfileLog(body);
                 resultList.add(resultBean);
+                cmbcResfileList.add(cmbcResfileLog);
                 i++;
             }
             log.info("cmbc Back to disk file context:/n/r"+JSON.toJSONString(resultList));
@@ -445,9 +454,9 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
                 transferBatch.setSuccessAmt(succAmt);
                 transferBatch.setFailCount(failItems);
                 transferBatch.setFailAmt(failAmt);
-                if(failItems>0){
+                if(failItems>0&&succItems>0){//失败数大于0 成功数也大于0 部分转账成功
                 	transferBatch.setTranStatus("02");
-                }else if(succItems==0){
+                }else if(succItems==0){//成功数=0
                 	transferBatch.setTranStatus("04");
                 }else{
                 	transferBatch.setTranStatus("03");
@@ -458,7 +467,7 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
             txnsInsteadPayDAO.update(txnsInsteadPay);
             //更新划拨明细数据
             
-            
+            cmbcResfileLogDAO.saveCMBCResfileLog(cmbcResfileList, transferBatch.getBankTranBatchNo());
         }else{
             
         }
@@ -496,20 +505,22 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
             while ((lineTxt = bufferedReader.readLine()) != null) {
                 if(i==0){
                     //0    1        2       3           4
-                    //PO|总笔数|总金额|成功笔数|成功金额
+                    //PO|总笔数|总金额|
                     String[] head = lineTxt.split("\\|");
                     sumItems   =  Long.valueOf(head[1]);
                     sumAmt     =  Long.valueOf(head[2]);
-                    succItems  =  Long.valueOf(head[3]);
-                    succAmt    =  Long.valueOf(head[4]);
+                    i++;
+                    continue;
                 }
                 if("########".equals(lineTxt.trim())){
                     break;
                 }
+                log.info("原始退汇文件内容("+i+"行):"+lineTxt);
                 //0     1        2         3              4      5       6         7            8           9     10
                 //报盘日期|报盘批次|第三方流水号|银行流水号|帐号|户名|金额|付款结果|失败返回码|失败原因|退汇日期
                 String[] body = lineTxt.split("\\|");
                 ReexchangeBean resultBean = new ReexchangeBean(body);
+                log.info("接收到退汇文件内容("+i+"行):"+JSON.toJSONString(resultBean));
                 resultList.add(resultBean);
                 i++;
             }
@@ -545,13 +556,53 @@ public class InsteadPayServiceImpl implements IInsteadPayService {
             if(succAmt_self!=succAmt){//成功总金额和实际成功总金额不一致
                 
             }
-            //数据没有问题
-            
-            
+            //更新转账明细数据
+            bankTransferDataDAO.batchUpdateReexchangeTransData(resultList);
+            //更新对应业务的数据，调用业务处理接口
+            dealWithReexchangeBusiData(resultList);
         } else {
             
         }
     }
+    
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+    public void dealWithReexchangeBusiData(List<ReexchangeBean> transferDataList){
+    	for (ReexchangeBean data : transferDataList) {
+            PojoBankTransferData transferData = bankTransferDataDAO.getTransferDataByTranId(data.getTranId());
+            if(transferData==null){
+            	continue;
+            }
+            UpdateData updateData = new UpdateData();
+            updateData.setTxnSeqNo(transferData.getTranData().getTxnseqno());
+            updateData.setResultCode("S".equalsIgnoreCase(data.getRespType())? "00": "04");
+            updateData.setResultMessage("S".equalsIgnoreCase(data.getRespType())? "交易成功": transferData.getResInfo());
+            updateData.setChannelCode(transferData.getBankTranBatch().getChannel().getBankChannelCode());
+            updateData.setChannelFee(new BigDecimal(Math.abs(data.getTransAmt()-transferData.getTranAmt())));
+            ObserverListService service  = ObserverListService.getInstance();
+            service.notify(updateData, transferData.getTranData().getBusiType());
+            
+            PojoBankTransferBatch transferBatch = transferData.getBankTranBatch();
+            if(transferBatch!=null){
+            	Long succItems = transferBatch.getSuccessCount();
+            	Long succAmt  = transferBatch.getSuccessAmt();
+            	Long failItems = transferBatch.getFailCount();
+            	Long failAmt = transferBatch.getFailAmt();
+                transferBatch.setSuccessCount(succItems-1);
+                transferBatch.setSuccessAmt(succAmt-data.getTransAmt());
+                transferBatch.setFailCount(failItems+1);
+                transferBatch.setFailAmt(failAmt+data.getTransAmt());
+                if(failItems>0){
+                	transferBatch.setTranStatus("02");
+                }else if(succItems==0){
+                	transferBatch.setTranStatus("04");
+                }else{
+                	transferBatch.setTranStatus("03");
+                }
+                bankTransferBatchDAO.update(transferBatch);
+            }
+    	}
+    }
+
 
     public static void main(String[] args) {
         InsteadPayServiceImpl impl =new InsteadPayServiceImpl();

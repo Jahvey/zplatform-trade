@@ -86,12 +86,21 @@ public class RspmsgDAOImpl  extends HibernateBaseDAOImpl<PojoRspmsg> implements 
 	@Transactional(propagation=Propagation.REQUIRES_NEW)
     public PojoRspmsg getRspmsgByChnlCode(ChnlTypeEnum chnlType,String retCode) {
         List<PojoRspmsg> result = null;
-        String  queryString = "from PojoRspmsg where chnltype=? and chnlrspcode=?";
+        String  queryString = null;
+        if(chnlType==null){
+        	queryString = "from PojoRspmsg where chnlrspcode=?";
+        }else{
+        	queryString = "from PojoRspmsg where chnltype=? and chnlrspcode=?";
+        }
         try {
-            log.info("queryString:"+queryString);
+            log.info("getRspmsgByChnlCode() queryString:"+queryString);
             Query query = getSession().createQuery(queryString);
-            query.setParameter(0,chnlType.getTradeType());
-            query.setParameter(1, retCode);
+            if(chnlType==null){
+            	query.setParameter(0, retCode);
+            }else{
+            	query.setParameter(0,chnlType.getTradeType());
+                query.setParameter(1, retCode);
+            }
             result = query.list();
             if(result.size()>0){
                 return result.get(0);

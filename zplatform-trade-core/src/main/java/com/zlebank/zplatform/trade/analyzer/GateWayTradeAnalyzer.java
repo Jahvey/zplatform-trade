@@ -40,7 +40,7 @@ import com.zlebank.zplatform.trade.utils.ObjectDynamic;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
 
 /**
- * Class Description
+ * 网关交易解析器
  *
  * @author guojia
  * @version
@@ -50,18 +50,20 @@ import com.zlebank.zplatform.trade.utils.ValidateLocator;
 public class GateWayTradeAnalyzer {
 
     public static byte[] generateOrderParamer(OrderBean order) throws Exception {
-        String[] unParamstring = {"signature"};
+        String[] unParamstring = {"signature","productcode"};
         String msg = ObjectDynamic.generateParamer(order, false, unParamstring);
-        
-        System.out.println("msg=====\n"+msg);
         return URLEncoder.encode(msg,"utf-8").getBytes();
     }
     public static byte[] generateOrderParamer(QueryBean queryBean) throws Exception {
-        String[] unParamstring = {"signature"};
+        String[] unParamstring = {"signature","productcode"};
         String msg = ObjectDynamic.generateParamer(queryBean, false, unParamstring);
         return URLEncoder.encode(msg,"utf-8").getBytes();
     }
-
+   /***
+    * 校验订单信息
+    * @param order
+    * @return
+    */
     public static ResultBean validateOrder(OrderBean order) {
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if (resultBean.isResultBool()) {
@@ -138,7 +140,11 @@ public class GateWayTradeAnalyzer {
         }
         return resultBean;
     }
-    
+    /***
+     * 校验Wap订单
+     * @param order
+     * @throws TradeException
+     */
     public static void validateWapOrder(WapOrderBean order) throws TradeException {
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if (resultBean.isResultBool()) {
@@ -242,7 +248,11 @@ public class GateWayTradeAnalyzer {
         queryResultBean.setSignature(RSAUtils.sign(data, privateKey));
         return queryResultBean;
     }
-    
+    /***
+     * 校验风控信息
+     * @param riskRateInfo
+     * @return
+     */
     public static ResultBean generateRiskBean(String riskRateInfo){
         String shippingFlag=           StringUtils.substringBetween(riskRateInfo, "shippingFlag=", "&");
         String shippingCountryCode=    StringUtils.substringBetween(riskRateInfo, "shippingCountryCode=", "&");
@@ -324,3 +334,4 @@ public class GateWayTradeAnalyzer {
     
     
 }
+

@@ -24,11 +24,30 @@ import com.zlebank.zplatform.trade.model.TxnsGatewaypayModel;
  * @since 
  */
 public interface ITxnsGatewaypayService extends IBaseService<TxnsGatewaypayModel, Long>{
+	/**
+	 * 保存网关交易流水
+	 * @param txnsGateway
+	 * @return
+	 */
     public ResultBean saveGateWay(TxnsGatewaypayModel txnsGateway);
+    /**
+     * 更新网关交易流水
+     * @param txnsGateway
+     * @return
+     */
     public ResultBean updateGateWay(TxnsGatewaypayModel txnsGateway);
+    /**
+     * 通过订单号获取网关交易流水数据
+     * @param orderNo
+     * @return
+     */
     public TxnsGatewaypayModel getOrderByOrderNo(String orderNo);
     
-    
+    /**
+     * 保存畅捷网关交易的流水
+     * @param orderBean
+     * @throws TradeException
+     */
     public void saveChanPayGateWay(ChanPayOrderBean orderBean) throws TradeException;
    
 }

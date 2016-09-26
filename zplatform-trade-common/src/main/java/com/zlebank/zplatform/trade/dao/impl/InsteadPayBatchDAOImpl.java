@@ -13,6 +13,7 @@ package com.zlebank.zplatform.trade.dao.impl;
 import java.sql.Date;
 
 import org.hibernate.Criteria;
+import org.hibernate.FetchMode;
 import org.hibernate.HibernateException;
 import org.hibernate.Query;
 import org.hibernate.criterion.Order;
@@ -99,6 +100,10 @@ public class InsteadPayBatchDAOImpl extends AbstractPagedQueryDAOImpl<PojoInstea
             if (query.getStatusList() != null
                     && query.getStatusList().size() != 0) {
                 crite.add(Restrictions.in("status", query.getStatusList()));
+            }
+            if(StringUtil.isNotEmpty(query.getOrderNo())){
+            	crite.setFetchMode("details",FetchMode.JOIN); 
+            	crite.createAlias("details","details").add(Restrictions.eq("details.orderId",query.getOrderNo())); 
             }
         }
         crite.addOrder(Order.desc("intime"));

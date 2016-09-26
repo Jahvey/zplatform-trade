@@ -35,6 +35,7 @@ import com.zlebank.zplatform.trade.service.IReaPayTradeService;
 import com.zlebank.zplatform.trade.service.IRouteConfigService;
 import com.zlebank.zplatform.trade.service.ITradeReceiveProcessor;
 import com.zlebank.zplatform.trade.service.ITxnsQuickpayService;
+import com.zlebank.zplatform.trade.service.ReaPayQuickPayService;
 import com.zlebank.zplatform.trade.utils.SpringContext;
 
 /**
@@ -47,20 +48,22 @@ import com.zlebank.zplatform.trade.utils.SpringContext;
  */
 public class ReaPayQuickTradeThread implements IQuickPayTrade{
     private static final Log log = LogFactory.getLog(ReaPayQuickTradeThread.class);
-    private static String PAYINSTID="96000001";
-    private ITxnsQuickpayService txnsQuickpayService;
+//    private static String PAYINSTID="96000001";
+   /* private ITxnsQuickpayService txnsQuickpayService;
     private IReaPayTradeService reaPayTradeService;
     private IRouteConfigService routeConfigService;
     private IQuickpayCustService quickpayCustService;
-    private ITradeReceiveProcessor receiveProcessor;
+    private ITradeReceiveProcessor receiveProcessor;*/
     private TradeBean tradeBean;
     private TradeTypeEnum tradeType;
+    
+    private ReaPayQuickPayService reaPayQuickPayService = (ReaPayQuickPayService) SpringContext.getContext().getBean("reaPayQuickPayService");
     public ReaPayQuickTradeThread(){
-        txnsQuickpayService = (ITxnsQuickpayService) SpringContext.getContext().getBean("txnsQuickpayService");
+        /*txnsQuickpayService = (ITxnsQuickpayService) SpringContext.getContext().getBean("txnsQuickpayService");
         reaPayTradeService  = (IReaPayTradeService) SpringContext.getContext().getBean("reaPayTradeService");
         routeConfigService  = (IRouteConfigService) SpringContext.getContext().getBean("routeConfigService");
         quickpayCustService = (IQuickpayCustService) SpringContext.getContext().getBean("quickpayCustService");
-        receiveProcessor = (ITradeReceiveProcessor) SpringContext.getContext().getBean("reaPayReceiveProcessor");
+        receiveProcessor = (ITradeReceiveProcessor) SpringContext.getContext().getBean("reaPayReceiveProcessor");*/
     }
     
     /**
@@ -94,7 +97,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
      */
     
     public ResultBean sendSms(TradeBean trade) {
-        trade.setPayinstiId(PAYINSTID);
+        /*trade.setPayinstiId(PAYINSTID);
         ResultBean resultBean = null;
         trade.setValidthru(trade.getMonth()+trade.getYear());
         SMSBean smsBean = ReaPayTradeAnalyzer.generateSMSBean(trade);
@@ -102,8 +105,8 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
         String payOrderNo =txnsQuickpayService.saveReaPaySMS(trade, smsBean);
         //发送短信验证码
         resultBean = reaPayTradeService.reSendSms(smsBean);
-        txnsQuickpayService.updateReaPaySMS(resultBean,payOrderNo);
-        return resultBean;
+        txnsQuickpayService.updateReaPaySMS(resultBean,payOrderNo);*/
+        return reaPayQuickPayService.sendSms(trade);
     }
 
     /**
@@ -113,7 +116,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
      */
     
     public ResultBean marginRegister(TradeBean trade) {
-        log.info("ReaPay bank sign start!");
+        /*log.info("ReaPay bank sign start!");
         if(log.isDebugEnabled()){
                 log.debug(JSON.toJSONString(trade));
         }
@@ -123,12 +126,9 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
             //已绑卡支付
             if(StringUtil.isNotEmpty(trade.getBindCardId())){
                 log.info("ReaPay bindcard sign start!");
-                //
-                
-                
-                
                 //使用已绑定的卡进行支付
                 BindBean bindBean = ReaPayTradeAnalyzer.generateBindBean(trade);
+                bindBean.setMember_ip("219.234.83.141");
                 if(log.isDebugEnabled()){
                     log.debug(JSON.toJSONString(bindBean));
                 }
@@ -149,6 +149,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
                 log.info("ReaPay debitcard sign start!");
                 //String accOrderNo = trade.getOrderId();//受理订单号
                 DebitBean debitBean = ReaPayTradeAnalyzer.generateDebitBean(trade);//生成借记卡签约bean
+                debitBean.setMember_ip("219.234.83.141");
                 if(log.isDebugEnabled()){
                     log.debug(JSON.toJSONString(debitBean));
                 }
@@ -164,6 +165,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
                     trade.setValidthru(trade.getMonth()+trade.getYear());//web收银台使用
                 }
                 CreditBean creditBean = ReaPayTradeAnalyzer.generateCreditBean(trade);
+                creditBean.setMember_ip("219.234.83.141");
                 if(log.isDebugEnabled()){
                     log.debug(JSON.toJSONString(creditBean));
                 }
@@ -187,7 +189,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
                     trade.setBindCardId("");
                 }
             }else{
-                quickpayCustService.deleteCard(trade.getCardId());
+                //quickpayCustService.deleteCard(trade.getCardId());
             }
             log.info("ReaPay bank card sign end!");
         } catch (Exception e) {
@@ -195,8 +197,8 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
             e.printStackTrace();
             resultBean = new ResultBean("RC99","交易失败");
         }
-        
-        return resultBean;
+        */
+        return null;
     }
 
     
@@ -207,7 +209,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
      */
     
     public ResultBean submitPay(TradeBean trade) {
-        log.info("ReaPay submit Pay start!");
+        /*log.info("ReaPay submit Pay start!");
         if(log.isDebugEnabled()){
             try {
                 log.debug(JSON.toJSONString(trade));
@@ -226,24 +228,23 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
         //更新快捷交易流水
         txnsQuickpayService.updateReaPaySign(resultBean,payorderno);
         log.info("ReaPay submit Pay end!");
-        receiveProcessor.onReceive(resultBean,trade,TradeTypeEnum.SUBMITPAY);
-        return resultBean;
+        receiveProcessor.onReceive(resultBean,trade,TradeTypeEnum.SUBMITPAY);*/
+        return reaPayQuickPayService.submitPay(trade);
     }
     /**
      *
      * @param trade
      * @return
      */
-    
     public ResultBean queryTrade(TradeBean trade) {
-        ResultBean resultBean = null;
+        /*ResultBean resultBean = null;
         QueryBean queryBean = ReaPayTradeAnalyzer.generateQueryBean(trade);
         //记录快捷交易流水
         String payorderno = txnsQuickpayService.saveReaPayQuery(trade, queryBean);
         resultBean = reaPayTradeService.searchPayResult(queryBean);
         //更新快捷交易流水
-        txnsQuickpayService.updateReaPayQuery(resultBean,payorderno);
-        return resultBean;
+        txnsQuickpayService.updateReaPayQuery(resultBean,payorderno);*/
+        return reaPayQuickPayService.queryTrade(trade);
     }
     /**
      * 银行卡签约
@@ -252,7 +253,7 @@ public class ReaPayQuickTradeThread implements IQuickPayTrade{
      */
     public ResultBean bankSign(TradeBean trade) {
         // TODO Auto-generated method stub
-        return marginRegister(trade);
+        return reaPayQuickPayService.bankCardSign(trade);
     }
    
     /**

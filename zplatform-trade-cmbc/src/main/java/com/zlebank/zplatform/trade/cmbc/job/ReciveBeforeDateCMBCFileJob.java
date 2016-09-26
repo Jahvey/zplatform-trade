@@ -189,9 +189,9 @@ public class ReciveBeforeDateCMBCFileJob {
             }
             File file = null;
             try {
-                String plainFilePath = ConsUtil.getInstance().cons.getCmbc_plainFilePath();
-                CMBCAESUtils.decodeAESFile(ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5().getBytes(), plainFilePath, TARGETPATH);
-                file = new File(plainFilePath);
+                //String plainFilePath = ConsUtil.getInstance().cons.getCmbc_plainFilePath();
+                //CMBCAESUtils.decodeAESFile(ConsUtil.getInstance().cons.getCmbc_insteadpay_batch_md5().getBytes(), plainFilePath, TARGETPATH);
+                file = new File(TARGETPATH);
                 downloadLog.setRecode(DownLoadTypeEnmu.SUCCESS.getCode());
                 String[] files =fileName.split("/");
                 insteadPayService.analyzeCMBCFile(file,files[files.length-1],FileTypeEnmu.REEXCHANGE);

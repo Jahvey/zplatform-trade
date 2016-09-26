@@ -47,10 +47,10 @@ public class CJG10001Test {
 	@Test
 	public void sendMessage() {
 		G10001Bean data = new G10001Bean();
-		data.setMertid("5ee26ddb404a590");
+		data.setMertid("cp2016011227674");
 		data.setBusinessCode("05101");
 		data.setCorpAccNo("201407301524");
-		data.setProductCode("50010001");
+		data.setProductCode("50110002");
 		data.setSubMertid("YS0001");
 		data.setBankGeneralName("中国工商银行");
 		data.setAccountNo("201407301524");

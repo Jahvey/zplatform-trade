@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.zlebank.zplatform</groupId>
 	<artifactId>zplatform-trade-deploy</artifactId>
-	<version>1.3.1-SNAPSHOT</version>
+	<version>1.6.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>zplatform-trade-deploy</name>
 	<url>http://www.zlebank.com/</url>
@@ -110,7 +110,7 @@
 			<dependency>
 				<groupId>com.zlebank.zplatform</groupId>
 				<artifactId>zplatform-member</artifactId>
-				<version>1.5.4</version>
+				<version>1.6.0-SNAPSHOT</version>
 			</dependency>
 			<dependency>
 				<groupId>junit</groupId>
@@ -318,6 +318,8 @@
 		<module>../zplatform-trade-bosspay</module>
 		<module>../zplatfrom-trade-chanpay</module>
 		<module>../zplatfrom-trade-wechat</module>
-		<!-- <module>../zplatform-trade-zlpay</module> -->
+		<module>../zplatform-trade-zlpay</module>
+		<module>../zplatform-trade-timeout</module>
+		<module>../zplatform-trade-wechat-qr</module>
 	</modules>
 </project>

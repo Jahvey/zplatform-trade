@@ -12,6 +12,7 @@ package com.zlebank.zplatform.trade.adapter.quickpay.impl;
 
 import java.util.Map;
 
+import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.trade.adapter.quickpay.IQuickPayTrade;
 import com.zlebank.zplatform.trade.analyzer.TestTradeAnalyzer;
@@ -31,6 +32,8 @@ import com.zlebank.zplatform.trade.service.IRouteConfigService;
 import com.zlebank.zplatform.trade.service.ITestTradeService;
 import com.zlebank.zplatform.trade.service.ITradeReceiveProcessor;
 import com.zlebank.zplatform.trade.service.ITxnsQuickpayService;
+import com.zlebank.zplatform.trade.utils.SMSThreadPool;
+import com.zlebank.zplatform.trade.utils.SMSUtil;
 import com.zlebank.zplatform.trade.utils.SpringContext;
 
 /**
@@ -152,7 +155,6 @@ public class TestQuickTradeThread implements IQuickPayTrade,Runnable{
            if(bindId!=null){
                bean.setBind_id(bindId+"");
            }
-           
        } catch (Exception e) {
            // TODO Auto-generated catch block
            e.printStackTrace();
@@ -161,6 +163,7 @@ public class TestQuickTradeThread implements IQuickPayTrade,Runnable{
        
        return resultBean;
    }
+   
 
    /**
     *

@@ -14,14 +14,20 @@ import java.math.BigDecimal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
+import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
+import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.trade.adapter.accounting.IAccounting;
 import com.zlebank.zplatform.trade.bean.ResultBean;
+import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 import com.zlebank.zplatform.trade.model.TxnsLogModel;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.utils.SpringContext;
@@ -43,13 +49,13 @@ public class SafeGuardMoneyAccounting implements IAccounting{
      * @param txnseqno
      * @return
      */
+    @Transactional(propagation=Propagation.REQUIRED)
     public ResultBean accountedFor(String txnseqno) {
-        ResultBean resultBean = null;
-        log.info("交易:"+txnseqno+"保障金入账开始");
+    	 ResultBean resultBean = null;
+         log.info("交易:"+txnseqno+"保证金账务处理开始");
         TxnsLogModel txnsLog = null;
             try {
-                txnsLog = txnsLogService
-                        .getTxnsLogByTxnseqno(txnseqno);
+                txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
                 /**支付订单号**/
                 String payordno = txnsLog.getPayordno();
                 /**交易类型**/
@@ -91,7 +97,11 @@ public class SafeGuardMoneyAccounting implements IAccounting{
                 tradeInfo.setProductId(productId);
                 accEntryService.accEntryProcess(tradeInfo,EntryEvent.TRADE_SUCCESS);
                 resultBean = new ResultBean("success");
-                log.info("保障金入账成功");
+                if(busiCode.equals(BusinessEnum.BAIL_RECHARGE.getBusiCode())){
+                	log.info("保障金充值入账成功");
+                }else if(busiCode.equals(BusinessEnum.BAIL_WITHDRAWALS.getBusiCode())){
+                	log.info("保障金体取成功");
+                }
             } catch (AccBussinessException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -104,19 +114,44 @@ public class SafeGuardMoneyAccounting implements IAccounting{
                 // TODO Auto-generated catch block
                 e.printStackTrace();
                 resultBean = new ResultBean("T099", e.getMessage());
-            }
-            if(txnsLog==null){
-                return resultBean;
-            }
-            if(resultBean.isResultBool()){
-                txnsLog.setApporderstatus("00");
-                txnsLog.setApporderinfo("保障金入账成功");
-            }else{
-                txnsLog.setApporderstatus(resultBean.getErrCode().substring(2));
-                txnsLog.setApporderinfo(resultBean.getErrMsg());
-            }
-            txnsLogService.updateAppStatus(txnseqno, txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
-        return resultBean;
+            } catch (IllegalEntryRequestException e) {
+				// TODO Auto-generated catch block
+            	resultBean = new ResultBean(e.getCode(), e.getMessage());
+			}
+            //处理账务
+   		 String retCode="";
+   		 String retInfo="";
+           if(resultBean.isResultBool()){
+   			 retCode="0000";
+   			 retInfo="交易成功";
+          }else{
+          	 retCode="0099";
+          	 retInfo=resultBean.getErrMsg();
+          }
+           txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
+           txnsLog.setAccordfintime(DateUtil.getCurrentDateTime());
+           txnsLog.setPayretcode(retCode);
+           txnsLog.setPayretinfo(retInfo);
+           txnsLog.setAppordcommitime(DateUtil.getCurrentDateTime());
+           txnsLog.setAppinst("000000000000");//没实际意义，可以为空
+           if("0000".equals(retCode)){
+        	   if(txnsLog.getBusicode().equals(BusinessEnum.BAIL_RECHARGE.getBusiCode())){
+        		   txnsLog.setApporderinfo("保证金充值账务成功");
+               }else if(txnsLog.getBusicode().equals(BusinessEnum.BAIL_WITHDRAWALS.getBusiCode())){
+            	   txnsLog.setApporderinfo("保证金提取账务成功");
+               }
+                txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
+           }else{
+           	txnsLog.setApporderinfo(retInfo);
+               txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+           }
+           txnsLog.setAppordfintime(DateUtil.getCurrentDateTime());
+           txnsLog.setRetcode(retCode);
+           txnsLog.setRetinfo(retInfo);
+           //支付定单完成时间
+           this.txnsLogService.updateTxnsLog(txnsLog);
+           log.info("交易:"+txnseqno+"保证金交易处理成功");
+   		return resultBean;
     }
 
     /**

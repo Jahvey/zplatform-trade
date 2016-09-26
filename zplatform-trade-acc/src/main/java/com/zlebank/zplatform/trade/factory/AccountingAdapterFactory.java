@@ -17,6 +17,7 @@ import com.zlebank.zplatform.trade.adapter.accounting.impl.ConsumeAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.InsteadPayAccoungting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.RefundAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.SafeGuardMoneyAccounting;
+import com.zlebank.zplatform.trade.adapter.accounting.impl.TransferAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.WithdrawAccounting;
 
 /**
@@ -40,7 +41,7 @@ public class AccountingAdapterFactory {
 		return accountingAdapterFactory;
 	}
 
-	public IAccounting getAccounting(String busitype) {
+	/*public IAccounting getAccounting(String busitype) {
 		IAccounting accounting = null;
 		if (busitype.equals("1000")) {// 消费
 			accounting = new ConsumeAccounting();
@@ -50,7 +51,7 @@ public class AccountingAdapterFactory {
 			accounting = new SafeGuardMoneyAccounting();
 		}
 		return accounting;
-	}
+	}*/
 
 	public IAccounting getAccounting(BusiTypeEnum busitype) {
 		IAccounting accounting = null;
@@ -73,6 +74,8 @@ public class AccountingAdapterFactory {
 			case withdrawal:
 				accounting = new WithdrawAccounting();
 				break;
+			case transfer:
+				accounting = new TransferAccounting();
 			default:
 				break;
 		}

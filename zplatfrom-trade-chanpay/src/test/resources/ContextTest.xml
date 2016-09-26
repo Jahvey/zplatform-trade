@@ -10,7 +10,7 @@
     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd">
 
 	<!-- 使用annotation 自动注册com.zlebank.zplatform.acc包下面的bean, 并保证@Required、@Autowired的属性被注入 -->
-	<context:component-scan base-package="com.zlebank.zplatform.trade.chanpay">
+	<context:component-scan base-package="com.zlebank.zplatform">
 	</context:component-scan>
 	<bean id="springContext" class="com.zlebank.zplatform.trade.utils.SpringContext"></bean>
 	<bean id="sessionFactory"
@@ -23,6 +23,7 @@
 				<value>com.zlebank.zplatform.acc.pojo</value>
 				<value>com.zlebank.zplatform.commons.dao.pojo</value>
 				<value>com.zlebank.zplatform.member.pojo</value>
+				<value>com.zlebank.zplatform.sms.pojo</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">

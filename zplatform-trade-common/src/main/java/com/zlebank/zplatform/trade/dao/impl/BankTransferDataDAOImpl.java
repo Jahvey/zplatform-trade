@@ -23,6 +23,7 @@ import com.zlebank.zplatform.commons.bean.TransferDataQuery;
 import com.zlebank.zplatform.commons.dao.impl.HibernateBaseDAOImpl;
 import com.zlebank.zplatform.commons.utils.DateUtil;
 import com.zlebank.zplatform.commons.utils.StringUtil;
+import com.zlebank.zplatform.trade.bean.cmbc.ReexchangeBean;
 import com.zlebank.zplatform.trade.bean.enums.InsteadPayTypeEnum;
 import com.zlebank.zplatform.trade.bean.page.QueryTransferBean;
 import com.zlebank.zplatform.trade.dao.BankTransferDataDAO;
@@ -125,7 +126,7 @@ HibernateBaseDAOImpl<PojoBankTransferData>
             query.setParameter(1, data.getResType());
             query.setParameter(2, data.getResCode());
             query.setParameter(3, data.getResInfo());
-            query.setParameter(4, "S".equalsIgnoreCase(data.getResType())? "00": "03");
+            query.setParameter(4, "S".equalsIgnoreCase(data.getResType())? "00": "05");
             query.setParameter(5, data.getBankTranDataSeqNo());
             query.executeUpdate();
             
@@ -162,6 +163,67 @@ HibernateBaseDAOImpl<PojoBankTransferData>
         }
 
     }
+    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    public void batchUpdateReexchangeTransData(List<ReexchangeBean> reexchangeList) {
+    	 StringBuffer hqlBuffer = new StringBuffer();
+         hqlBuffer.append("update PojoBankTransferData set bankTranResNo = ?, ");
+         hqlBuffer.append("resType = ?,");
+         hqlBuffer.append("resCode = ?,");
+         hqlBuffer.append("resInfo = ?,");
+         hqlBuffer.append("status = ? ");
+         hqlBuffer.append("where bankTranDataSeqNo = ? ");
+         Session session = getSession();
+         for (ReexchangeBean data : reexchangeList) {
+             Query query = session.createQuery(hqlBuffer.toString());
+             PojoBankTransferData data_old = getTransferDataByTranId(data.getTranId());
+             if(data_old==null){
+             	continue;
+             }
+             query.setParameter(0, data.getBankTranId());
+             query.setParameter(1, data.getRespType());
+             query.setParameter(2, data.getRespCode());
+             query.setParameter(3, data.getRespMsg());
+             query.setParameter(4, "S".equalsIgnoreCase(data.getRespType())? "00": "05");
+             query.setParameter(5, data.getTranId());
+             query.executeUpdate();
+             
+             
+             query = session.createQuery("update TxnsLogModel set payretcode=?,payretinfo=?,payordfintime=?,payrettsnseqno=?,retcode=?,retinfo=?, tradeseltxn=?,accordcommitime=?,retdatetime=?,relate=?,tradetxnflag=? where txnseqno=?");
+             if("S".equalsIgnoreCase(data.getRespType())){
+                 query.setParameter(0, "000000");
+                 query.setParameter(1, "交易成功");
+                 query.setParameter(4, "0000");
+                 query.setParameter(5, "交易成功");
+             }else{
+                 query.setParameter(0, data.getRespCode());
+                 query.setParameter(1, data.getRespMsg());
+                 query.setParameter(4, "3299");
+                 query.setParameter(5, "交易失败");
+             }
+             query.setParameter(2, DateUtil.getCurrentDateTime());
+             query.setParameter(3, data.getBankTranId());
+             query.setParameter(6, UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
+             query.setParameter(7, DateUtil.getCurrentDateTime());
+             query.setParameter(8, DateUtil.getCurrentDateTime());
+             query.setParameter(9, "10000000");
+             query.setParameter(10, "10000000");
+             
+             query.setParameter(11, data_old.getTranData().getTxnseqno());
+             query.executeUpdate();
+             
+             //更新划拨数据
+             PojoTranData tranData = data_old.getTranData();
+             tranData.setStatus("S".equalsIgnoreCase(data.getRespType())? "02": "03");
+             tranDataDAO.update(tranData);
+             //更新划拨批次信息
+             tranBatchDAO.updateBankTransferResult(data_old.getTranData().getTranBatch().getTid());
+         }
+        
+    }
+    
+    
+    
+    
     
     @SuppressWarnings("unchecked")
     @Transactional(propagation=Propagation.REQUIRES_NEW)

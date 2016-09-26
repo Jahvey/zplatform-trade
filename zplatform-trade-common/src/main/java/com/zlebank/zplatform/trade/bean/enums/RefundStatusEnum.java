@@ -38,6 +38,8 @@ public enum RefundStatusEnum {
 	BANK_TRAN_REFUSE("39"),
 	/**交易失败*/
 	FAILED("49"),
+	/**交易成功*/
+	SUCCESS("00"),
 	UNKNOW("99");
 	private String code;
 

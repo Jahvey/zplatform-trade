@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
 import com.zlebank.zplatform.commons.utils.DateUtil;
+import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.trade.bean.AppPartyBean;
 import com.zlebank.zplatform.trade.bean.PayPartyBean;
 import com.zlebank.zplatform.trade.bean.ResultBean;
@@ -37,7 +38,6 @@ import com.zlebank.zplatform.trade.service.ChanPayAsyncService;
 import com.zlebank.zplatform.trade.service.IGateWayService;
 import com.zlebank.zplatform.trade.service.ITxnsGatewaypayService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
-import com.zlebank.zplatform.trade.utils.UUIDUtil;
 
 /**
  * Class Description
@@ -68,7 +68,7 @@ public class ChanPayAsyncServiceImpl implements ChanPayAsyncService {
 	 * @throws TradeException
 	 */
 	@Override
-	@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
 	public ResultBean dealWithTradeAsync(
 			TradeAsyncResultBean tradeAsyncResultBean) throws TradeException {
 		ResultBean resultBean = null;
@@ -82,49 +82,59 @@ public class ChanPayAsyncServiceImpl implements ChanPayAsyncService {
 		try {
 			String out_trade_no = tradeAsyncResultBean.getOuter_trade_no();
 			TradeStatusEnum tradeStatusEnum = TradeStatusEnum.fromValue(tradeAsyncResultBean.getTrade_status());
-			//交易网关流水数据
-			TxnsGatewaypayModel gatewayOrder = gatewaypayService.getOrderByOrderNo(out_trade_no);
-			String txnseqno = gatewayOrder.getRelatetradetxn();
-			//交易流水数据
-			TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
-			//交易订单数据
-			TxnsOrderinfoModel orderinfo = gateWayService.getOrderByTxnseqno(txnseqno);
-			gatewayOrder.setClosetime(tradeAsyncResultBean.getGmt_close());
-			gatewayOrder.setPayfinshtime(tradeAsyncResultBean.getGmt_payment());
-			gatewayOrder
-					.setPayrettxnseqno(tradeAsyncResultBean.getInner_trade_no());
-			gatewayOrder.setPayretcode(tradeStatusEnum.getCode());
-			gatewayOrder.setPayretinfo(tradeStatusEnum.getMesssage());
-			if (tradeStatusEnum == TradeStatusEnum.PAY_FINISHED
-					|| tradeStatusEnum == TradeStatusEnum.TRADE_FINISHED
-					|| tradeStatusEnum == TradeStatusEnum.TRADE_SUCCESS) {
-				gatewayOrder.setStatus("00");// 交易成功
-				orderinfo.setStatus("00");
-			} else {
-				gatewayOrder.setStatus("03");
-				orderinfo.setStatus("03");
-			}
-			gatewaypayService.update(gatewayOrder);
-			// 更新数据 交易流水
+			if(tradeStatusEnum == TradeStatusEnum.TRADE_SUCCESS){//交易成功
+				//交易网关流水数据
+				TxnsGatewaypayModel gatewayOrder = gatewaypayService.getOrderByOrderNo(out_trade_no);
+				String txnseqno = gatewayOrder.getRelatetradetxn();
+				//交易流水数据
+				TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
+				if(StringUtil.isNotEmpty(txnsLog.getApporderstatus())&&StringUtil.isNotEmpty(txnsLog.getApporderinfo())){//交易账务信息都不为空，说明账务已完成
+					return new ResultBean("success");
+				}
+				
+				//交易订单数据
+				TxnsOrderinfoModel orderinfo = gateWayService.getOrderByTxnseqno(txnseqno);
+				gatewayOrder.setClosetime(tradeAsyncResultBean.getGmt_close());
+				gatewayOrder.setPayfinshtime(tradeAsyncResultBean.getGmt_payment());
+				gatewayOrder
+						.setPayrettxnseqno(tradeAsyncResultBean.getInner_trade_no());
+				gatewayOrder.setPayretcode(tradeStatusEnum.getCode());
+				gatewayOrder.setPayretinfo(tradeStatusEnum.getMesssage());
+				if (tradeStatusEnum == TradeStatusEnum.PAY_FINISHED
+						|| tradeStatusEnum == TradeStatusEnum.TRADE_FINISHED
+						|| tradeStatusEnum == TradeStatusEnum.TRADE_SUCCESS) {
+					gatewayOrder.setStatus("00");// 交易成功
+					orderinfo.setStatus("00");
+				} else {
+					gatewayOrder.setStatus("03");
+					orderinfo.setStatus("03");
+				}
+				gatewaypayService.update(gatewayOrder);
+				// 更新数据 交易流水
 
-			PayPartyBean payPartyBean = new PayPartyBean();
-			payPartyBean.setPayordfintime(tradeAsyncResultBean.getGmt_payment());
-			payPartyBean
-					.setPayrettsnseqno(tradeAsyncResultBean.getInner_trade_no());
-			payPartyBean.setPayretcode(tradeStatusEnum.getCode());
-			payPartyBean.setPayretinfo(tradeStatusEnum.getMesssage());
-			payPartyBean.setTxnseqno(txnseqno);
-			txnsLogService.updateGateWayPayResult(payPartyBean);
-			// 更新数据 交易订单
-			orderinfo.setOrderfinshtime(DateUtil.getCurrentDateTime());
-			gatewaypayService.update(gatewayOrder);
-			gateWayService.update(orderinfo);
-			//更新应用方信息
-			AppPartyBean appParty = new AppPartyBean("","000000000000", DateUtil.getCurrentDateTime(),DateUtil.getCurrentDateTime(), txnseqno, "");
-			txnsLogService.updateAppInfo(appParty);
-			// 处理账务
-			AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.fromValue(txnsLog.getBusitype())).accountedFor(txnseqno);
-			resultBean = new ResultBean("success");
+
+				PayPartyBean payPartyBean = new PayPartyBean();
+				payPartyBean.setPayordfintime(tradeAsyncResultBean.getGmt_payment());
+				payPartyBean
+						.setPayrettsnseqno(tradeAsyncResultBean.getInner_trade_no());
+				payPartyBean.setPayretcode(tradeStatusEnum.getCode());
+				payPartyBean.setPayretinfo(tradeStatusEnum.getMesssage());
+				payPartyBean.setTxnseqno(txnseqno);
+				txnsLogService.updateGateWayPayResult(payPartyBean);
+				// 更新数据 交易订单
+				orderinfo.setOrderfinshtime(DateUtil.getCurrentDateTime());
+				gatewaypayService.update(gatewayOrder);
+				gateWayService.update(orderinfo);
+				//更新应用方信息
+				AppPartyBean appParty = new AppPartyBean("","000000000000", DateUtil.getCurrentDateTime(),DateUtil.getCurrentDateTime(), txnseqno, "");
+				txnsLogService.updateAppInfo(appParty);
+				// 处理账务
+				AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.fromValue(txnsLog.getBusitype())).accountedFor(txnseqno);
+				resultBean = new ResultBean("success");
+			}else if(tradeStatusEnum == TradeStatusEnum.TRADE_FINISHED){
+				resultBean = new ResultBean("success");
+			}
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

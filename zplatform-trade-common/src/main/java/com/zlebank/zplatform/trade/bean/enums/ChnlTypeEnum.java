@@ -26,8 +26,9 @@ public enum ChnlTypeEnum {
     TC("TC"),
     TEST("TEST"),
     CMBCWITHHOLDING("CMBC"),
-    BOSSPAY("boss"),
-    CHANPAY("chanpay"),
+    BOSSPAY("BOSS"),
+    CHANPAY("CHAN"),
+    WECHAT("WECHAT"),
     UNKNOW("99");
    private String tradeType;
     

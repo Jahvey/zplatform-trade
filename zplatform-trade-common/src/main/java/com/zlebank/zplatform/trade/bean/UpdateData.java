@@ -10,6 +10,8 @@
  */
 package com.zlebank.zplatform.trade.bean;
 
+import java.math.BigDecimal;
+
 /**
  * Class Description
  *
@@ -19,10 +21,26 @@ package com.zlebank.zplatform.trade.bean;
  * @since 
  */
 public class UpdateData {
+	/**
+	 * 交易序列号
+	 */
     private String txnSeqNo;
+    /**
+     * 应答码
+     */
     private String resultCode;
+    /**
+     * 应答信息
+     */
     private String resultMessage;
+    /**
+     * 渠道代码
+     */
     private String channelCode;
+    /**
+     * 渠道手续费
+     */
+    private BigDecimal channelFee;
 
     public String getTxnSeqNo() {
         return txnSeqNo;
@@ -48,4 +66,17 @@ public class UpdateData {
     public void setChannelCode(String channelCode) {
         this.channelCode = channelCode;
     }
+	/**
+	 * @return the channelFee
+	 */
+	public BigDecimal getChannelFee() {
+		return channelFee;
+	}
+	/**
+	 * @param channelFee the channelFee to set
+	 */
+	public void setChannelFee(BigDecimal channelFee) {
+		this.channelFee = channelFee;
+	}
+    
 }

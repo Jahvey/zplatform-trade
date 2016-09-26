@@ -24,14 +24,14 @@ import com.thoughtworks.xstream.io.xml.XmlFriendlyNameCoder;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.bean.TradeBean;
 import com.zlebank.zplatform.trade.bean.enums.ChnlTypeEnum;
-import com.zlebank.zplatform.trade.bean.enums.TradeTypeEnum;
 import com.zlebank.zplatform.trade.cmbc.bean.RealNameAuthQueryResultBean;
 import com.zlebank.zplatform.trade.cmbc.bean.RealTimeWithholdingQueryResultBean;
 import com.zlebank.zplatform.trade.cmbc.bean.WhiteListQueryResultBean;
 import com.zlebank.zplatform.trade.cmbc.net.ReceiveProcessor;
+import com.zlebank.zplatform.trade.cmbc.quickpay.CMBCQueryTradeThread;
 import com.zlebank.zplatform.trade.cmbc.quickpay.CMBCQueryTradeThreadPool;
-import com.zlebank.zplatform.trade.cmbc.quickpay.CMBCSelfQueryTradeThread;
 import com.zlebank.zplatform.trade.cmbc.security.RSAHelper;
+import com.zlebank.zplatform.trade.cmbc.service.CMBCCrossLineQuickPayService;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.dao.RspmsgDAO;
 import com.zlebank.zplatform.trade.model.PojoRspmsg;
@@ -91,6 +91,7 @@ public class CMBCWithholdingResultReciveProcessor implements ReceiveProcessor{
     private ITxnsOrderinfoDAO txnsOrderinfoDAO;
     private ITxnsLogService txnsLogService;
     private RspmsgDAO rspmsgDAO;
+    private CMBCCrossLineQuickPayService cmbcCrossLineQuickPayService;
     /** 
      *
      * @param data
@@ -155,14 +156,15 @@ public class CMBCWithholdingResultReciveProcessor implements ReceiveProcessor{
                             ResultBean resultBean = new ResultBean(withholding);
                             TradeBean tradeBean = new TradeBean();
                             tradeBean.setTxnseqno(withholding.getTxnseqno());
-                            tradeReceiveProcessor.onReceive(resultBean, tradeBean, TradeTypeEnum.ACCOUNTING);
+                            cmbcCrossLineQuickPayService.dealWithAccounting(tradeBean.getTxnseqno(), resultBean);
+                            //tradeReceiveProcessor.onReceive(resultBean, tradeBean, TradeTypeEnum.ACCOUNTING);
                         }else if(withholding.getExectype().equals("E")){
                             saveFailedCMBCTrade(withholding);
                         }else{
                             String ori_tran_date = withholding.getTransdate();
                             String ori_tran_id = withholding.getOrireqserialno();
                             String txnseqno = withholding.getTxnseqno();
-                            CMBCQueryTradeThreadPool.getInstance().executeMission(new CMBCSelfQueryTradeThread(ori_tran_date, ori_tran_id, txnseqno));
+                            CMBCQueryTradeThreadPool.getInstance().executeMission(new CMBCQueryTradeThread(ori_tran_date, ori_tran_id, txnseqno));
                         }
                         
                         
@@ -214,6 +216,7 @@ public class CMBCWithholdingResultReciveProcessor implements ReceiveProcessor{
         txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfo");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
         rspmsgDAO = (RspmsgDAO) SpringContext.getContext().getBean("rspmsgDAO");
+        cmbcCrossLineQuickPayService = (CMBCCrossLineQuickPayService) SpringContext.getContext().getBean("cmbcCrossLineQuickPayService");
     }
     
     public void saveFailedCMBCTrade(TxnsWithholdingModel withholding){

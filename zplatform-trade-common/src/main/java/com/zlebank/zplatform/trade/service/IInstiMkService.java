@@ -21,5 +21,6 @@ import com.zlebank.zplatform.trade.model.InstiMkModel;
  * @since 
  */
 public interface IInstiMkService extends IBaseService<InstiMkModel, String>{
+	@Deprecated
     public InstiMkModel getMKbySafeseq(String safeseq);
 }

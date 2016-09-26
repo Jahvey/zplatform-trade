@@ -14,6 +14,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -35,7 +37,7 @@ import org.bouncycastle.util.Store;
 import org.bouncycastle.util.encoders.Base64;
 
 public class CjSignHelper {
-	public static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(CjSignHelper.class);
+	public static final Log LOG = LogFactory.getLog(CjSignHelper.class);
 
 	public static final String TAG_SIGNED_PREFIX = "<SIGNED_MSG>";
 	public static final String TAG_SIGNED_SUFFIX = "</SIGNED_MSG>";
@@ -99,6 +101,7 @@ public class CjSignHelper {
 		Security.addProvider(bouncyCastlePd);
 		LOG.info("设置加密提供者：" + bouncyCastlePd.getName());
 
+		
 		JcaContentSignerBuilder jcaContentSignerBuilder = new JcaContentSignerBuilder(SIGNATUREALGO).setProvider(bouncyCastlePd.getName());
 		ContentSigner signer = jcaContentSignerBuilder.build(privateKey);
 

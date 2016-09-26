@@ -43,6 +43,7 @@ public class QuickpayCustModel implements java.io.Serializable {
     private String remarks;
     private String bankcode;
     private String bankname;
+    private String devId;
 
     // Constructors
 
@@ -111,8 +112,22 @@ public class QuickpayCustModel implements java.io.Serializable {
         this.validtime = encryptDataBean.getExpired();
         this.status = "01";
     }
+    
+    /**
+	 * @return the devId
+	 */
+    @Column(name = "DEVID")
+	public String getDevId() {
+		return devId;
+	}
+	/**
+	 * @param devId the devId to set
+	 */
+	public void setDevId(String devId) {
+		this.devId = devId;
+	}
 
-    // Property accessors
+	// Property accessors
     @Id
     @Column(name = "ID", unique = true, nullable = false, precision = 15, scale = 0)
     public Long getId() {
@@ -278,6 +293,7 @@ public class QuickpayCustModel implements java.io.Serializable {
     
     
     private String miniCardNo;
+    
 
     /**
      * @return the miniCardNo

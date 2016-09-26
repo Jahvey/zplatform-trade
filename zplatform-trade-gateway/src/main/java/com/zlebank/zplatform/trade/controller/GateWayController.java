@@ -10,7 +10,6 @@
  */
 package com.zlebank.zplatform.trade.controller;
 
-import java.math.BigDecimal;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,12 +37,14 @@ import org.springframework.web.servlet.ModelAndView;
 import com.alibaba.fastjson.JSON;
 import com.zlebank.zplatform.acc.bean.BusiAcct;
 import com.zlebank.zplatform.acc.bean.BusiAcctQuery;
-import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
+import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
+import com.zlebank.zplatform.acc.exception.AccBussinessException;
+import com.zlebank.zplatform.acc.exception.IllegalEntryRequestException;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.AccountQueryService;
-import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.bean.PagedResult;
+import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
 import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.commons.utils.security.AESHelper;
 import com.zlebank.zplatform.commons.utils.security.AESUtil;
@@ -51,7 +52,6 @@ import com.zlebank.zplatform.commons.utils.security.RSAHelper;
 import com.zlebank.zplatform.member.bean.CoopInsti;
 import com.zlebank.zplatform.member.bean.MerchMK;
 import com.zlebank.zplatform.member.bean.QuickpayCustBean;
-import com.zlebank.zplatform.member.bean.enums.MemberType;
 import com.zlebank.zplatform.member.dao.CoopInstiDAO;
 import com.zlebank.zplatform.member.dao.PersonDAO;
 import com.zlebank.zplatform.member.pojo.PojoCoopInsti;
@@ -68,13 +68,12 @@ import com.zlebank.zplatform.trade.adapter.quickpay.IQuickPayTrade;
 import com.zlebank.zplatform.trade.analyzer.GateWayTradeAnalyzer;
 import com.zlebank.zplatform.trade.analyzer.ReaPayTradeAnalyzer;
 import com.zlebank.zplatform.trade.bean.AppPartyBean;
-import com.zlebank.zplatform.trade.bean.PayPartyBean;
 import com.zlebank.zplatform.trade.bean.ReaPayResultBean;
 import com.zlebank.zplatform.trade.bean.ResultBean;
-import com.zlebank.zplatform.trade.bean.RoutBean;
 import com.zlebank.zplatform.trade.bean.TradeBean;
-import com.zlebank.zplatform.trade.bean.ZLPayResultBean;
 import com.zlebank.zplatform.trade.bean.enums.ChannelEnmu;
+import com.zlebank.zplatform.trade.bean.enums.OrderStatusEnum;
+import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
 import com.zlebank.zplatform.trade.bean.gateway.AnonOrderAsynRespBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderAsynRespBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderBean;
@@ -89,6 +88,7 @@ import com.zlebank.zplatform.trade.cmbc.bean.gateway.InsteadPayMessageBean;
 import com.zlebank.zplatform.trade.cmbc.service.ICMBCTransferService;
 import com.zlebank.zplatform.trade.cmbc.service.IWithholdingService;
 import com.zlebank.zplatform.trade.cmbc.service.impl.InsteadPayServiceImpl;
+import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.dao.RspmsgDAO;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
@@ -99,16 +99,13 @@ import com.zlebank.zplatform.trade.model.TxnsLogModel;
 import com.zlebank.zplatform.trade.model.TxnsNotifyTaskModel;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.model.TxnsQuickpayModel;
-import com.zlebank.zplatform.trade.model.TxnsWithdrawModel;
 import com.zlebank.zplatform.trade.model.TxnsWithholdingModel;
 import com.zlebank.zplatform.trade.security.reapay.AES;
 import com.zlebank.zplatform.trade.security.reapay.RSA;
-import com.zlebank.zplatform.trade.service.ChanPayAsyncService;
 import com.zlebank.zplatform.trade.service.IAccountPayService;
 import com.zlebank.zplatform.trade.service.IGateWayService;
 import com.zlebank.zplatform.trade.service.IProdCaseService;
 import com.zlebank.zplatform.trade.service.IRouteConfigService;
-import com.zlebank.zplatform.trade.service.IRouteProcessService;
 import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.ITxnsNotifyTaskService;
@@ -122,7 +119,6 @@ import com.zlebank.zplatform.trade.utils.BankCardUtil;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
 import com.zlebank.zplatform.trade.utils.ObjectDynamic;
-import com.zlebank.zplatform.trade.utils.OrderNumber;
 import com.zlebank.zplatform.trade.utils.SynHttpRequestThread;
 
 /**
@@ -151,8 +147,6 @@ public class GateWayController {
     private ITxnsLogService txnsLogService;
     @Autowired
     private IRouteConfigService routeConfigService;
-    @Autowired
-    private IRouteProcessService routeProcessService;
     @Autowired
     private ITxncodeDefService txncodeDefService;
     @Autowired
@@ -188,16 +182,25 @@ public class GateWayController {
     private ChanPayService chanPayService;
     @Autowired
     private MerchMKService merchMKService;
-
-    
     @Autowired
     private CoopInstiDAO coopInstiDAO;
+    @Autowired
+	private ITxnsOrderinfoDAO txnsOrderinfoDAO;
     
+    
+    /***
+     * 收银台生成订单
+     * @param order
+     * @param httpSession
+     * @param request
+     * @return
+     */
     @RequestMapping("/coporder.htm")
     public ModelAndView pay(OrderBean order,HttpSession httpSession,HttpServletRequest request) {
         log.info("receive web message(json):" + JSON.toJSONString(order));
         Map<String, Object> model = new HashMap<String, Object>();
         try {
+        	//校验订单信息
             if (!validateOrder(order, model)) {
                 return new ModelAndView("/erro_gw", model);
             }
@@ -209,8 +212,11 @@ public class GateWayController {
             }
             // 订单记录和业务逻辑处理,取得商户信息，记录交易数据（核心）和订单详细信息，分析交易所属业务
             String txnseqno = gateWayService.dealWithOrder(order, riskRateInfo);
+            TxnsOrderinfoModel  orderInfo =this.txnsOrderinfoDAO.getOrderByTxnseqno(txnseqno);
             return new ModelAndView("redirect:/gateway/cash.htm?txnseqno="
                     + txnseqno);
+            /*String weburl= ConsUtil.getInstance().cons.getWeb_cash_url();
+            return new ModelAndView("redirect:"+weburl+"?tn="+ orderInfo.getTn());*/
         } catch (Exception e) {
             e.printStackTrace();
             model.put("errMsg", "订单信息错误，请重新提交");
@@ -218,7 +224,57 @@ public class GateWayController {
         }
         return new ModelAndView("/erro_gw", model);
     }
-
+    
+    /***
+     * 收银台生成订单
+     * @param order
+     * @param httpSession
+     * @param request
+     * @return
+     */
+    @RequestMapping("/coporderWeb.htm")
+    public ModelAndView payExt(OrderBean order,HttpSession httpSession,HttpServletRequest request) {
+        log.info("receive web message(json):" + JSON.toJSONString(order));
+        Map<String, Object> model = new HashMap<String, Object>();
+        String weburl= ConsUtil.getInstance().cons.getWeb_cash_url();
+        String errurl =weburl+"/errOrder.htm";
+        try {
+        	//校验订单信息
+            if (!validateOrder(order, model)) {
+            	String errCode=model.get("errCode")==null?"":model.get("errCode").toString();
+            	String errorMsg=model.get("errMsg")==null?"":model.get("errMsg").toString();
+            	log.error("生成订单 失败 errorCode="+errCode+"errorMsg="+errorMsg);
+            	return new ModelAndView("redirect:"+errurl);
+            }
+            RiskRateInfoBean riskRateInfo = (RiskRateInfoBean) GateWayTradeAnalyzer
+                    .generateRiskBean(order.getRiskRateInfo()).getResultObj();
+            //记录付款人的IP
+            if(StringUtil.isEmpty(order.getCustomerIp())){
+                order.setCustomerIp(getIpAddr(request));
+            }
+            // 订单记录和业务逻辑处理,取得商户信息，记录交易数据（核心）和订单详细信息，分析交易所属业务
+            String txnseqno = gateWayService.dealWithOrder(order, riskRateInfo);
+            TxnsOrderinfoModel  orderInfo =this.txnsOrderinfoDAO.getOrderByTxnseqno(txnseqno);
+            /*return new ModelAndView("redirect:/gateway/cash.htm?txnseqno="
+                    + txnseqno);*/
+            return new ModelAndView("redirect:"+weburl+"/cash.htm?tn="+ orderInfo.getTn());
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.put("errMsg", "订单信息错误，请重新提交");
+            model.put("errCode", "RC99");
+           
+        }
+        String errCode=model.get("errCode")==null?"":model.get("errCode").toString();
+    	String errorMsg=model.get("errMsg")==null?"":model.get("errMsg").toString();
+    	 log.error("生成订单 失败 errorCode="+errCode+"errorMsg="+errorMsg);
+    	return new ModelAndView("redirect:"+errurl);
+    }
+    /***
+     * 校验订单信息
+     * @param order
+     * @param model
+     * @return
+     */
     private boolean validateOrder(OrderBean order, Map<String, Object> model) {
         // 验证订单数据有效性，用hibernate validator处理
         ResultBean resultBean = GateWayTradeAnalyzer.validateOrder(order);
@@ -236,6 +292,7 @@ public class GateWayController {
             model.put("errCode", riskResultBean.getErrCode());
             return false;
         }
+        //校验签名信息
         ResultBean signResultBean = gateWayService.verifyOrder(order);
         if (!signResultBean.isResultBool()) {
             // 订单信息验签未通过
@@ -276,7 +333,7 @@ public class GateWayController {
                 model.put("errCode", msg.getWebrspcode());
                 return false;
             }
-            
+            //校验商户会员信息 1-普通会员 2-商户会员 3-合作机构
             if (order.getMerId().startsWith("2")) {// 对于商户会员需要进行检查
             	PojoMember pojoMember = memberService2.getMbmberByMemberId(order.getMerId(), null);
             	PojoCoopInsti pojoCoopInsti = coopInstiDAO.get(pojoMember.getInstiId());
@@ -289,8 +346,6 @@ public class GateWayController {
             }
 
         }
-        
-
         // 业务验证
         // 充值业务，如果memberId为空，或者为999999999999999时为非法订单
         ResultBean memberBusiResultBean = gateWayService
@@ -302,7 +357,7 @@ public class GateWayController {
             model.put("errCode", msg.getWebrspcode());
             return false;
         }
-        
+        //校验非匿名会员和商户的资金账户是否正常 
         try {
 			gateWayService.checkBusiAcct(order.getMerId(), ((RiskRateInfoBean)riskResultBean.getResultObj()).getMerUserId());
 		} catch (TradeException e) {
@@ -311,29 +366,41 @@ public class GateWayController {
 			PojoRspmsg msg = rspmsgDAO.get(e.getCode());
         	model.put("errMsg", msg.getRspinfo());
             model.put("errCode", msg.getWebrspcode());
+            return false;
 		}
         return true;
     }
-
+    /***
+     * 
+     * @param txnseqno
+     * @param request
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/cash.htm", method = RequestMethod.GET)
     public ModelAndView cashIndex(@RequestParam("txnseqno") String txnseqno,HttpServletRequest request) throws Exception {
         Map<String, Object> model = new HashMap<String, Object>();
         try {
+        	//1.获取交易信息
             if (StringUtil.isEmpty(txnseqno)) {
                 model.put("errMsg", "交易失败，查无此交易");
                 return new ModelAndView("/erro_gw", model);
             }
             TxnsLogModel txnsLog = txnsLogService
                     .getTxnsLogByTxnseqno(txnseqno);
+            //2.获取一级商户信息
             CoopInsti coopInsti = coopInstiService.getInstiByInstiCode(txnsLog.getAccfirmerno());
+            //3.获取二级商户信息
             PojoMerchDeta merch = null;
             if (StringUtil.isNotEmpty(txnsLog.getAccsecmerno())) {
             	merch = merchService.getMerchBymemberId(txnsLog.getAccsecmerno());
             }
+            //根据受理订单和一级商户获取订单信息
             TxnsOrderinfoModel orderInfo = gateWayService
                     .getOrderinfoByOrderNoAndMemberId(txnsLog.getAccordno(),
                             txnsLog.getAccfirmerno());
-            if ("00".equals(orderInfo.getStatus())) {// 支付成功的订单不可重复支付
+            // 支付成功的订单不可重复支付
+            if (OrderStatusEnum.SUCCESS.equals(orderInfo.getStatus())) {
                 model.put("errMsg", "交易成功，请不要重复支付");
                 model.put("errCode", "RC10");
                 return new ModelAndView("/erro_gw", model);
@@ -341,6 +408,7 @@ public class GateWayController {
             model.put("cashier", "");
             model.put("merchName", coopInsti.getInstiName());
             model.put("merchId", txnsLog.getAccfirmerno());
+            model.put("subMerchId", txnsLog.getAccsecmerno());
             model.put("goodsName", orderInfo.getGoodsname());
             model.put("txnseqno", txnseqno);
             model.put("memberId", txnsLog.getAccmemberid());
@@ -360,7 +428,7 @@ public class GateWayController {
 
             if (!"999999999999999".equals(txnsLog.getAccmemberid())) {
                 // 获取会员已绑定的银行卡
-                 PagedResult<QuickpayCustBean> bindCardList =  memberBankCardService.queryMemberBankCard(txnsLog.getAccmemberid(), "0",null, 0, 10);
+                PagedResult<QuickpayCustBean> bindCardList =  memberBankCardService.queryMemberBankCard(txnsLog.getAccmemberid(), "0",null, 0, 10);
                 model.put("bindCardList", bindCardList.getPagedResult());
                 //QuickpayCustBean quickpayCust = null;
                 // 处理银行卡验证信息及身份信息，取得卡信息
@@ -561,7 +629,6 @@ public class GateWayController {
         if (StringUtil.isEmpty(trade.getTxnseqno())) {
             return new ModelAndView("redirect:/gateway/cash.htm?txnseqno=" + txnseqno_);
         }
-        
         Map<String, Object> model = new HashMap<String, Object>();
         TradeBean tradeBean2 = trade.clone();
         try {
@@ -610,137 +677,6 @@ public class GateWayController {
         return bean;
     }
 
-    /**
-     * 证联支付基金支付渠道
-     * 
-     * @param trade
-     * @param routId
-     * @param model
-     * @return
-     * @throws Exception
-     */
-    private ResultBean zlpayChannel(TradeBean trade,
-            String routId,
-            Map<String, Object> model) throws Exception {
-        ResultBean returnBean = null;
-        String gateWayOrderId = trade.getOrderId();
-        RoutBean routBean = routeProcessService.getCurrentStep(routId,
-                trade.getCurrentSetp(), trade.getBusicode());
-        IQuickPayTrade quickPayTrade = TradeAdapterFactory.getInstance()
-                .getQuickPayTrade(routBean.getChnlcode());
-        trade.setCurrentSetp(routBean.getTxncode_current());
-        ResultBean resultBean = quickPayTrade.bankSign(trade);
-        // 更新核心交易表路由信息
-        txnsLogService.updateRoutInfo(trade.getTxnseqno(), routId,
-                routBean.getTxncode_current(), trade.getCashCode());
-        trade.setCurrentSetp(routBean.getTxncode_current());
-        if (resultBean.isResultBool()) {// 同步开户成功
-            ZLPayResultBean zlPayResult = (ZLPayResultBean) resultBean
-                    .getResultObj();
-            ResultBean routResultBean = routeConfigService.getTransRout(
-                    DateUtil.getCurrentDateTime(), trade.getAmount(),
-                    StringUtil.isNotEmpty(trade.getMerchId())?trade.getMerchId():trade.getSubMerchId(), trade.getBusicode(), trade.getCardNo(),
-                    trade.getCashCode());
-
-            if (routResultBean.isResultBool()) {
-                routBean = routeProcessService.getCurrentStep(routId,
-                        trade.getCurrentSetp(), trade.getBusicode());
-                quickPayTrade = TradeAdapterFactory.getInstance()
-                        .getQuickPayTrade(routBean.getChnlcode());
-                trade.setCurrentSetp(routBean.getTxncode_current());
-                routId = routResultBean.getResultObj().toString();
-                trade.setUserId(zlPayResult.getUserId());
-                // 支付机构号暂时未定义
-                PayPartyBean payPartyBean = new PayPartyBean(
-                        trade.getTxnseqno(), "01", trade.getOrderId(), "",
-                        ConsUtil.getInstance().cons.getInstuId(), "",
-                        DateUtil.getCurrentDateTime(), "", trade.getCardNo()
-                        );
-                txnsLogService.updatePayInfo_Fast(payPartyBean);
-                // 更新核心交易表路由信息
-                txnsLogService.updateRoutInfo(trade.getTxnseqno(), routId,
-                        routBean.getTxncode_current(), trade.getCashCode());
-                resultBean = quickPayTrade.submitPay(trade);
-                if (resultBean.isResultBool()) {// 快捷支付成功
-                    zlPayResult = (ZLPayResultBean) resultBean.getResultObj();
-                    // 完成核心交易的记录和网关交易记录的更新
-                    gateWayService.saveSuccessTrade(trade.getTxnseqno(),
-                            gateWayOrderId, zlPayResult);
-                    // 获取下一步路由步骤，进行账务处理
-                    routBean = routeProcessService.getNextRoutStep(routId,
-                            trade.getCurrentSetp(), trade.getBusicode());
-                    log.info("nextStep:" + routBean.getTxncode_next());
-                    String commiteTime = DateUtil.getCurrentDateTime();
-                    IAccounting accounting = AccountingAdapterFactory
-                            .getInstance().getAccounting(trade.getBusitype());
-                    ResultBean accountingResultBean = accounting
-                            .accountedFor(trade.getTxnseqno());
-                    if (accountingResultBean.isResultBool()) {// 账务处理成功
-                        // 处理同步通知和异步通知
-                        // 根据原始订单拼接应答报文，异步通知商户
-                        // gateWayOrderId
-                        TxnsOrderinfoModel gatewayOrderBean = gateWayService
-                                .getOrderinfoByOrderNoAndMemberId(
-                                        gateWayOrderId, trade.getMerchId());
-                        AppPartyBean appParty = new AppPartyBean("",
-                                "000000000000", commiteTime,
-                                DateUtil.getCurrentDateTime(),
-                                trade.getTxnseqno(),
-                                routBean.getTxncode_current());
-                        txnsLogService.updateAppInfo(appParty);
-                        ResultBean orderResp = gateWayService
-                                .generateRespMessage(gateWayOrderId,
-                                        trade.getMerchId());
-                        if (orderResp.isResultBool()) {
-                            OrderRespBean respBean = (OrderRespBean) orderResp
-                                    .getResultObj();
-                            model.put(
-                                    "suburl",
-                                    gatewayOrderBean.getFronturl()
-                                            + "?"
-                                            + ObjectDynamic.generateParamer(
-                                                    respBean, false, null));
-                            // 异步消息通知
-                            new SynHttpRequestThread(trade.getMerchId(),
-                                    trade.getTxnseqno(),
-                                    gatewayOrderBean.getBackurl(),
-                                    respBean.getNotifyParam()).start();
-                            returnBean = new ResultBean("success");
-                            model.put("txnseqno", trade.getTxnseqno());
-                            model.put("errMsg", "交易处理成功");
-                            model.put("respCode", "0000");
-                            return returnBean;
-                        } else {
-                            model.put("txnseqno", trade.getTxnseqno());
-                            model.put("errMsg", orderResp.getErrMsg());
-                            model.put("respCode", orderResp.getErrCode());
-                        }
-
-                    } else {
-                        model.put("txnseqno", trade.getTxnseqno());
-                        model.put("errMsg", accountingResultBean.getErrMsg());
-                        model.put("respCode", accountingResultBean.getErrCode());
-                    }
-
-                } else {
-                    zlPayResult = (ZLPayResultBean) resultBean.getResultObj();
-                    // 完成核心交易的记录和网关交易记录的更新
-                    gateWayService.saveFailTrade(trade.getTxnseqno(),
-                            gateWayOrderId, zlPayResult);
-                }
-            }
-
-        }
-        model.put("errMsg", resultBean.getErrMsg());
-        model.put("respCode", resultBean.getErrCode());
-        model.put("txnseqno", trade.getTxnseqno());
-        return null;
-    }
-
-    
-
-    
-
     @RequestMapping("/toBankPay.htm")
     public ModelAndView toSubmitPay(TradeBean trade, @RequestParam("txnseqno_")String txnseqno_) {
         // t_txns_orderinfo的订单号
@@ -749,9 +685,9 @@ public class GateWayController {
         model.put("txnseqno", trade.getTxnseqno());
         try {
             String gateWayOrderId = trade.getOrderId();
-            TxnsOrderinfoModel orderinfo = gateWayService
-                    .getOrderinfoByOrderNoAndMemberId(gateWayOrderId,
-                            trade.getMerchId());
+            TxnsOrderinfoModel orderinfo = gateWayService.getOrderByTxnseqno(trade.getTxnseqno());
+                    /*.getOrderinfoByOrderNoAndMemberId(gateWayOrderId,
+                            trade.getMerchId());*/
             if (orderinfo == null) {
                 model.put("errMsg", "无效订单信息");
                 model.put("respCode", "RC99");
@@ -769,10 +705,10 @@ public class GateWayController {
             }
 
             //获取路由信息
-            ResultBean routResultBean = routeConfigService.getTransRout(
+            ResultBean routResultBean = routeConfigService.getWapTransRout(
                     DateUtil.getCurrentDateTime(), trade.getAmount(),
-                    StringUtil.isNotEmpty(trade.getMerchId())?trade.getMerchId():trade.getSubMerchId(), trade.getBusicode(), trade.getCardNo(),
-                    trade.getCashCode());
+                    StringUtil.isNotEmpty(orderinfo.getSecmemberno())?orderinfo.getSecmemberno():orderinfo.getFirmemberno(), trade.getBusicode(), trade.getCardNo()
+                   );
             if (routResultBean.isResultBool()) {
                 String routId = routResultBean.getResultObj().toString();
                 ChannelEnmu channel = ChannelEnmu.fromValue(routId);
@@ -781,16 +717,20 @@ public class GateWayController {
                 model.put("trade", trade);
                 switch (channel) {
                     case ZLPAY :
-                        zlpayChannel(trade, routId, model);
-                        break;
+                    	TxnsOrderinfoModel gatewayOrderBean2 = gateWayService.getOrderByTxnseqno(trade.getTxnseqno());
+                        ResultBean orderResp2 = gateWayService.generateAsyncRespMessage(trade.getTxnseqno());
+                        OrderAsynRespBean respBean2 = (OrderAsynRespBean) orderResp2.getResultObj();
+                        model.put("suburl",gatewayOrderBean2.getFronturl()+ "?"+ ObjectDynamic.generateReturnParamer(respBean2, false, null));
+                        model.put("errMsg", "交易成功");
+                        model.put("respCode", "0000");
+                        return new ModelAndView("/fastpay/success", model);
                     case REAPAY :
                         return new ModelAndView("redirect:/gateway/waiting.htm?txnseqno="+ trade.getTxnseqno()+"&reapayOrderNo="+trade.getReaPayOrderNo()+"&orderNo="+trade.getOrderId());
                     case TEST:
-                        TxnsOrderinfoModel gatewayOrderBean = gateWayService.getOrderinfoByOrderNoAndMemberId(gateWayOrderId,trade.getMerchId());
-                        ResultBean orderResp = gateWayService.generateRespMessage(
-                                gatewayOrderBean.getOrderno(), trade.getMerchId());
-                        OrderRespBean respBean = (OrderRespBean) orderResp.getResultObj();
-                        model.put("suburl",gatewayOrderBean.getFronturl()+ "?"+ ObjectDynamic.generateReturnParamer(respBean, false, null));
+                        TxnsOrderinfoModel gatewayOrderBean = gateWayService.getOrderByTxnseqno(trade.getTxnseqno());
+                        ResultBean orderResp = gateWayService.generateAsyncRespMessage(trade.getTxnseqno());
+                        //OrderAsynRespBean respBean = (OrderAsynRespBean ) orderResp.getResultObj();
+                        //model.put("suburl",gatewayOrderBean.getFronturl()+ "?"+ ObjectDynamic.generateReturnParamer(respBean, false, null));
                         model.put("errMsg", "交易成功");
                         model.put("respCode", "0000");
                         return new ModelAndView("/fastpay/success", model);
@@ -798,6 +738,8 @@ public class GateWayController {
                         return new ModelAndView("redirect:/gateway/payment.htm?txnseqno="+ trade.getTxnseqno()+"&reapayOrderNo="+trade.getReaPayOrderNo()+"&orderNo="+trade.getOrderId());
                     case CMBCSELFWITHHOLDING:
                         return new ModelAndView("redirect:/gateway/payment.htm?txnseqno="+ trade.getTxnseqno()+"&reapayOrderNo="+trade.getReaPayOrderNo()+"&orderNo="+trade.getOrderId());
+                    case CHANPAYCOLLECTMONEY:
+                    	return new ModelAndView("redirect:/gateway/payment.htm?txnseqno="+ trade.getTxnseqno()+"&reapayOrderNo="+trade.getReaPayOrderNo()+"&orderNo="+trade.getOrderId());
 				default:
 					break;
                     
@@ -917,9 +859,9 @@ public class GateWayController {
     public Object queryCMBCTrade(String orderNo,String txnseqno) {
         Map<String, Object> model = new HashMap<String, Object>();
         TxnsLogModel txnsLog = null;
-        int[] timeArray = new int[]{1000, 2000, 8000, 16000, 32000,64000};
+        int[] timeArray = new int[]{1000, 2000, 2000, 2000,2000,2000,2000,2000,2000,2000};
         try {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 10; i++) {
                 txnsLog=txnsLogService.getTxnsLogByTxnseqno(txnseqno);
                 if(StringUtil.isNotEmpty(txnsLog.getPayretcode())){
                     ChannelEnmu channel = ChannelEnmu.fromValue(txnsLog.getPayinst());
@@ -976,6 +918,29 @@ public class GateWayController {
                                 }
                             }
                             break;
+                        case CHANPAYCOLLECTMONEY:
+                        	serialno = txnsLog.getPayordno();
+                            if(!txnsLog.getPayretcode().equals("0000")){
+                                model.put("errMsg", txnsLog.getRetinfo());
+                                model.put("respCode", txnsLog.getRetcode());
+                                TradeBean tradeBean = new TradeBean();
+                                tradeBean.setTxnseqno(txnseqno);
+                                model.put("trade", tradeBean);
+                                model.put("txnseqno", txnseqno);
+                                return "failed";
+                            }
+                            withholding = txnsWithholdingService.getWithholdingBySerialNo(serialno);
+                            model.put("errMsg", txnsLog.getRetinfo());
+                            model.put("respCode", txnsLog.getRetcode());
+                            TradeBean tradeBean = new TradeBean();
+                            tradeBean.setTxnseqno(txnseqno);
+                            model.put("trade", tradeBean);
+                            model.put("txnseqno", txnseqno);
+                            if(txnsLog.getPayretcode().equals("0000")){
+                                return "completed";
+                            }else{
+                                return "failed";
+                            }
 					default:
 						break;
                     }
@@ -997,10 +962,9 @@ public class GateWayController {
     @RequestMapping("/toNetBank.htm")
     public ModelAndView toBank(TradeBean trade) {
         Map<String, Object> model = new HashMap<String, Object>();
-        ChannelEnmu channelEnmu = ChannelEnmu.fromValue("91000001");
-        
+        ChannelEnmu channelEnmu = ChannelEnmu.fromValue("90000001");
         switch (channelEnmu) {
-			case CHANPAYGATEWAY:
+			case CHANPAY:
 				model.put("txnseqno", trade.getTxnseqno());
 				model.put("bankcode", trade.getBankCode());
 				return new ModelAndView("redirect:/chanpay/createOrder", model);
@@ -1154,6 +1118,7 @@ public class GateWayController {
             // 查询快捷交易数据获取交易序列号
             List<TxnsQuickpayModel> quickPayList = txnsQuickpayService
                     .queryTxnsByOrderNo(reaPayResult.getOrder_no());
+            
             if ("TRADE_FINISHED".equalsIgnoreCase(reaPayResult.getStatus()
                     .trim())) {// 交易成功
                 if (quickPayList.size() > 0) {
@@ -1174,7 +1139,7 @@ public class GateWayController {
                             txnsLog.getAccordno(), reaPayResult);
                     String commiteTime = DateUtil.getCurrentDateTime();
                     IAccounting accounting = AccountingAdapterFactory
-                            .getInstance().getAccounting(txnsLog.getBusitype());
+                            .getInstance().getAccounting(BusiTypeEnum.fromValue(txnsLog.getBusitype()));
                     String reaPayOrderNo = txnsLog.getAccordno();
                     // 处理同步通知和异步通知
                     // 根据原始订单拼接应答报文，异步通知商户
@@ -1186,33 +1151,38 @@ public class GateWayController {
                             "000000000000", commiteTime,
                             DateUtil.getCurrentDateTime(), txnseqno, "AC000000");
                     txnsLogService.updateAppInfo(appParty);
-                    ResultBean orderResp = gateWayService
-                            .generateAsyncRespMessage(reaPayOrderNo,
-                                    txnsLog.getAccfirmerno());
-                    if (orderResp.isResultBool()) {
-                    	if("000205".equals(gatewayOrderBean.getBiztype())){
-                    		AnonOrderAsynRespBean respBean = (AnonOrderAsynRespBean) orderResp
-                                    .getResultObj();
-                    		
-                    		InsteadPayNotifyTask task = new InsteadPayNotifyTask();
-                    		responseData(respBean, txnsLog.getAccfirmerno(), txnsLog.getAccsecmerno(), task);
-                    		new SynHttpRequestThread(
-                                    StringUtil.isNotEmpty(gatewayOrderBean.getSecmemberno())?gatewayOrderBean.getSecmemberno():gatewayOrderBean.getFirmemberno(),
-                                    gatewayOrderBean.getRelatetradetxn(),
-                                    gatewayOrderBean.getBackurl(),
-                                    task).start();
-                    	}else{
-                    		OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp
-                                    .getResultObj();
-                            // 异步消息通知
-                            new SynHttpRequestThread(
-                                    gatewayOrderBean.getFirmemberno(),
-                                    gatewayOrderBean.getRelatetradetxn(),
-                                    gatewayOrderBean.getBackurl(),
-                                    respBean.getNotifyParam()).start();
-                    	}
-                        
-                    }
+                    txnsLogService.updateTradeStatFlag(txnseqno, TradeStatFlagEnum.FINISH_SUCCESS);
+                    /**异步通知处理开始 **/
+                    try {
+            			ResultBean orderResp = 
+            					gateWayService.generateAsyncRespMessage(txnsLog.getTxnseqno());
+            			if (orderResp.isResultBool()) {
+            				if("000205".equals(gatewayOrderBean.getBiztype())){
+                        		AnonOrderAsynRespBean respBean = (AnonOrderAsynRespBean) orderResp.getResultObj();
+                        		
+                        		InsteadPayNotifyTask task = new InsteadPayNotifyTask();
+                        		//对匿名支付订单数据进行加密加签
+                        		responseData(respBean, txnsLog.getAccfirmerno(), txnsLog.getAccsecmerno(), task);
+                        		new SynHttpRequestThread(
+                                        StringUtil.isNotEmpty(gatewayOrderBean.getSecmemberno())?gatewayOrderBean.getSecmemberno():gatewayOrderBean.getFirmemberno(),
+                                        gatewayOrderBean.getRelatetradetxn(),
+                                        gatewayOrderBean.getBackurl(),
+                                        task).start();
+                        	}else{
+                        		OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp
+                                        .getResultObj();
+                                new SynHttpRequestThread(
+                                		StringUtil.isNotEmpty(gatewayOrderBean.getSecmemberno())?gatewayOrderBean.getSecmemberno():gatewayOrderBean.getFirmemberno(),
+                                        gatewayOrderBean.getRelatetradetxn(),
+                                        gatewayOrderBean.getBackurl(),
+                                        respBean.getNotifyParam()).start();
+                        	}
+            			   
+            			}
+            		} catch (Exception e) {
+            			// TODO Auto-generated catch block
+            			e.printStackTrace();
+            		}
                     accounting.accountedFor(txnseqno);
 
                     /*
@@ -1238,8 +1208,9 @@ public class GateWayController {
                 TxnsOrderinfoModel gatewayOrderBean = gateWayService
                         .getOrderinfoByOrderNoAndMemberId(reaPayOrderNo,
                                 txnsLog.getAccfirmerno());
+                txnsLogService.updateTradeStatFlag(txnseqno, TradeStatFlagEnum.FINISH_FAILED);
                 ResultBean orderResp = gateWayService.generateAsyncRespMessage(
-                        reaPayOrderNo, txnsLog.getAccfirmerno());
+                         txnsLog.getTxnseqno());
                 if (orderResp.isResultBool()) {
                     OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp
                             .getResultObj();
@@ -1269,8 +1240,8 @@ public class GateWayController {
         TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(txnseqno);
         TxnsOrderinfoModel gatewayOrderBean = gateWayService
                 .getOrderinfoByOrderNoAndMemberId(txnsLog.getAccordno(),txnsLog.getAccfirmerno());
-        ResultBean orderResp = gateWayService.generateRespMessage(orderNo,txnsLog.getAccfirmerno());
-        OrderRespBean respBean = (OrderRespBean) orderResp.getResultObj();
+        ResultBean orderResp = gateWayService.generateAsyncRespMessage(txnsLog.getTxnseqno());
+        OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp.getResultObj();
         model.put("suburl", gatewayOrderBean.getFronturl() + "?"+ ObjectDynamic.generateReturnParamer(respBean, false, null));
         model.put("errMsg", "交易成功");
         model.put("respCode", "0000");
@@ -1289,9 +1260,14 @@ public class GateWayController {
         Map<String, Object> model = new HashMap<String, Object>();
         // TxnsOrderinfoModel gatewayOrderBean =
         // gateWayService.getOrderinfoByOrderNo(orderNo);
-        gateWayService.updateOrderToFail(orderNo);
+        gateWayService.updateOrderToFail(txnseqno);
         TxnsLogModel txnsLog = txnsLogService.get(txnseqno);
-        model.put("errMsg", txnsLog.getRetinfo());
+        if(StringUtil.isNotEmpty(txnsLog.getRetinfo())){
+        	model.put("errMsg", txnsLog.getRetinfo());
+        }else{
+        	model.put("errMsg", txnsLog.getPayretinfo());
+        }
+        
         model.put("respCode", txnsLog.getRetcode());
         model.put("txnseqno", txnseqno);;
         return new ModelAndView("/erro", model);
@@ -1418,7 +1394,7 @@ public class GateWayController {
     @RequestMapping("/error.htm")
     public ModelAndView toExceptionPage(String orderNo, String txnseqno) {
         Map<String, Object> model = new HashMap<String, Object>();
-        gateWayService.updateOrderToFail(orderNo);
+        gateWayService.updateOrderToFail(txnseqno);
         model.put("errMsg", "系统异常,请联系证联金融客服");
         model.put("respCode", "ZL34");
         model.put("txnseqno", txnseqno);
@@ -1494,62 +1470,40 @@ public class GateWayController {
     @RequestMapping("/withdraw.htm")
     public ModelAndView withdraw(TradeBean tradeBean) {
         Map<String, Object> model = new HashMap<String, Object>();
-        try {
-            TxnsOrderinfoModel orderinfo = gateWayService
-                    .getOrderinfoByOrderNoAndMemberId(tradeBean.getOrderId(),
-                            tradeBean.getMerchId());
-            if ("02".equals(orderinfo.getStatus())) {
-                model.put("errMsg", "提现正在审核中，请不要重复提交");
-                model.put("txnseqno", tradeBean.getTxnseqno());
-                return new ModelAndView("/erro_gw", model);
-            }
-            TxnsLogModel txnsLog = txnsLogService.get(orderinfo.getRelatetradetxn());
-            
-            //验证提现密码
-            if(!gateWayService.validatePayPWD(txnsLog.getAccmemberid(), tradeBean.getPay_pwd(), MemberType.INDIVIDUAL)){
-            	model.put("errMsg", "支付密码错误");
-                model.put("respCode", "ZL34");
-                model.put("txnseqno", tradeBean.getTxnseqno());
-                return new ModelAndView("/erro_gw", model);
-            }
-            TxnsWithdrawModel withdraw = new TxnsWithdrawModel(tradeBean);
-            //记录提现账务
-            TradeInfo tradeInfo = new TradeInfo();
-            tradeInfo.setBusiCode("30000001");
-            tradeInfo.setPayMemberId(withdraw.getMemberid());
-            tradeInfo.setPayToMemberId(withdraw.getMemberid());
-            tradeInfo.setAmount(new BigDecimal(withdraw.getAmount()));
-            tradeInfo.setCharge(new BigDecimal(txnsLogService.getTxnFee(txnsLog)));
-            tradeInfo.setTxnseqno(orderinfo.getRelatetradetxn());
-            tradeInfo.setCoopInstCode(orderinfo.getFirmemberno());
-            //记录分录流水
-            accEntryService.accEntryProcess(tradeInfo,EntryEvent.AUDIT_APPLY);
-            if (StringUtil.isNotEmpty(tradeBean.getBindCardId())) {
-                /*QuickpayCustModel card = memberBankCardService.
-                        .getCardByBindId(tradeBean.getBindCardId());
-                withdraw.setAcctname(card.getAccname());
-                withdraw.setAcctno(card.getCardno());*/
-            }
-            txnsWithdrawService.saveWithdraw(withdraw);
-            gateWayService.updateOrderToStartPay(tradeBean.getTxnseqno());
-            model.put(
-                    "suburl",
-                    orderinfo.getFronturl()
-                            + "?"
-                            + ObjectDynamic.generateReturnParamer(
-                                    gateWayService
-                                            .generateWithdrawRespMessage(tradeBean
-                                                    .getOrderId()), false, null));
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            model.put("errMsg", "提现申请失败");
-            model.put("respCode", "ZL34");
-            model.put("txnseqno", tradeBean.getTxnseqno());
-            return new ModelAndView("/fastpay/erro", model);
-        }
-        model.put("errMsg", "提现申请成功");
-        return new ModelAndView("/fastpay/success", model);
+		try {
+			model = gateWayService.withdraw(tradeBean);
+		} catch (AccBussinessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			model.put("errMsg", "提现申请失败");
+			model.put("txnseqno", tradeBean.getTxnseqno());
+			return new ModelAndView("/erro_gw", model);
+		} catch (IllegalEntryRequestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			model.put("errMsg", "提现申请失败");
+			model.put("txnseqno", tradeBean.getTxnseqno());
+			return new ModelAndView("/erro_gw", model);
+		} catch (AbstractBusiAcctException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			model.put("errMsg", "提现申请失败");
+			model.put("txnseqno", tradeBean.getTxnseqno());
+			return new ModelAndView("/erro_gw", model);
+		} catch (NumberFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			model.put("errMsg", "提现申请失败");
+			model.put("txnseqno", tradeBean.getTxnseqno());
+			return new ModelAndView("/erro_gw", model);
+		} catch (TradeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			model.put("errMsg", "提现申请失败");
+			model.put("txnseqno", tradeBean.getTxnseqno());
+			return new ModelAndView("/erro_gw", model);
+		}
+		return new ModelAndView(model.get("url")+"", model);
     }
     @RequestMapping("/testcmbcinsteadpay")
     @ResponseBody
@@ -1617,7 +1571,8 @@ public class GateWayController {
 		queryTradeBean.setProduct_code("20201");
 		List<BankItemBean> queryBank = (List<BankItemBean>) chanPayService.queryBank(queryTradeBean);
 		
-		List<BankItemBean> b2c_bank = new ArrayList<BankItemBean>();
+		List<BankItemBean> b2c_bank_cc = new ArrayList<BankItemBean>();
+		List<BankItemBean> b2c_bank_dc = new ArrayList<BankItemBean>();
 		List<BankItemBean> b2b_bank = new ArrayList<BankItemBean>();
 		for(BankItemBean bankItemBean : queryBank){
 			/*if("QPAY".equals(bankItemBean.getPay_mode())){
@@ -1625,16 +1580,21 @@ public class GateWayController {
 			}*/
 			if("ONLINE_BANK".equals(bankItemBean.getPay_mode())){
 				if("C".equals(bankItemBean.getCard_attribute())){
-					b2c_bank.add(bankItemBean);
+					
+					if("DC".equals(bankItemBean.getCard_type())){
+						b2c_bank_dc.add(bankItemBean);
+					}else{
+						b2c_bank_cc.add(bankItemBean);
+					}
+					
 				}else if("B".equals(bankItemBean.getCard_attribute())){
 					b2b_bank.add(bankItemBean);
 				}
 			}
-			
 		}
 		
 		
-	    return queryBank;
+	    return b2c_bank_dc;
     }
     
     private void responseData(AnonOrderAsynRespBean respBean, String coopInstCode,String merchNo,InsteadPayNotifyTask task) {

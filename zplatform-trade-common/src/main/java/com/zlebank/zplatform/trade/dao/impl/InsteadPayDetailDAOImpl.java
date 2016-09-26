@@ -200,7 +200,7 @@ public class InsteadPayDetailDAOImpl
             Criteria crite = this.getSession().createCriteria(
                     PojoInsteadPayDetail.class);
             crite.add(Restrictions.eq("insteadPayBatch.id", batchId));
-            String[] codes = new String[]{"00", "01","02","03","09"};
+            String[] codes = new String[]{"00", "01","02","03","04","09"};
             crite.add(Restrictions.not(Restrictions.in("respCode", codes)));
             crite.setProjection(Projections.rowCount());  
             int count = Integer.parseInt(crite.uniqueResult().toString());

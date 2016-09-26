@@ -8,9 +8,11 @@ public enum ChannelEnmu {
     CMBCWITHHOLDING("93000002"),//民生银行跨行代扣
     CMBCSELFWITHHOLDING("93000003"),//民生银行本行代扣
     BOSSPAYCOLLECTION("92000001"),//博士金电实时代收
-    CHANPAYGATEWAY("91000001"),
     WEBCHAT("91000001"),//微信支付渠道
+    WEBCHAT_QR("91000002"),//中少微信二维码
     CHANPAY("90000001"),//畅捷网关支付
+    CHANPAYCOLLECTMONEY("90000002"),//畅捷代收
+    INNERCHANNEL("99999999"),//账务渠道
     UNKNOW("");//未知
     private String chnlcode;
     

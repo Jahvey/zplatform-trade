@@ -68,13 +68,13 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param marginSmsBean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveMobileCode(TradeBean trade,MarginSmsBean marginSmsBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,marginSmsBean);
         super.save(txnsQuickpay);
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveReaPaySMS(TradeBean trade,SMSBean smsBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,smsBean);
         
@@ -82,7 +82,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         return txnsQuickpay.getPayorderno();
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveTestSMS(TradeBean trade,SMSBean smsBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,smsBean,"");
         super.save(txnsQuickpay);
@@ -95,21 +95,32 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param bean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateMobileCode(ResultBean bean) {
         // TODO Auto-generated method stub
-        ZLPayResultBean zlPayResultBean = (ZLPayResultBean)bean.getResultObj();
-        TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", zlPayResultBean.getMerchantSeqId()).get(0);
-        if(bean.isResultBool()){
-            txnsQuickpay.setStatus("00");
-        }else{
+    	if(bean.isResultBool()){
+    		ZLPayResultBean zlPayResultBean = (ZLPayResultBean)bean.getResultObj();
+            TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", zlPayResultBean.getMerchantSeqId()).get(0);
+            if(bean.isResultBool()){
+                txnsQuickpay.setStatus("00");
+            }else{
+                txnsQuickpay.setStatus("02");
+            } 
+            txnsQuickpay.setRetorderno(zlPayResultBean.getPnrSeqId());
+            txnsQuickpay.setPayfinishtime(DateUtil.getCurrentDateTime());
+            txnsQuickpay.setPayretcode(zlPayResultBean.getRespCode());
+            txnsQuickpay.setPayretinfo(zlPayResultBean.getRespDesc());
+            super.update(txnsQuickpay);
+    	}else{
+    		String merchantseqid = bean.getResultObj()+"";
+    		TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno",merchantseqid).get(0);
             txnsQuickpay.setStatus("02");
-        } 
-        txnsQuickpay.setRetorderno(zlPayResultBean.getPnrSeqId());
-        txnsQuickpay.setPayfinishtime(DateUtil.getCurrentDateTime());
-        txnsQuickpay.setPayretcode(zlPayResultBean.getRespCode());
-        txnsQuickpay.setPayretinfo(zlPayResultBean.getRespDesc());
-        super.update(txnsQuickpay);
+            txnsQuickpay.setPayfinishtime(DateUtil.getCurrentDateTime());
+            txnsQuickpay.setPayretcode(bean.getErrCode());
+            txnsQuickpay.setPayretinfo(bean.getErrMsg());
+            super.update(txnsQuickpay);
+    	}
+        
         
     }
     /**
@@ -117,19 +128,19 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param marginRegisterBean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveMarginRegister(TradeBean trade,MarginRegisterBean marginRegisterBean) {
         // TODO Auto-generated method stub
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,marginRegisterBean);
         super.save(txnsQuickpay);
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public TxnsQuickpayModel saveReaPayDebitSign(TradeBean trade,DebitBean debitBean){
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,debitBean);
         super.save(txnsQuickpay);
         return txnsQuickpay;
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public TxnsQuickpayModel saveTestDebitSign(TradeBean trade,DebitBean debitBean){
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,debitBean,"");
         super.save(txnsQuickpay);
@@ -142,7 +153,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param bean
      */
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor = Throwable.class)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateMarginRegister(ResultBean bean) {
         // TODO Auto-generated method stub
         ZLPayResultBean zlPayResultBean = (ZLPayResultBean)bean.getResultObj();
@@ -159,7 +170,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.update(txnsQuickpay);
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateReaPaySign(ResultBean bean,String payorderno) {
         // TODO Auto-generated method stub
         ReaPayResultBean realPayPayResultBean = (ReaPayResultBean)bean.getResultObj();
@@ -175,7 +186,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.update(txnsQuickpay);
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateCMBCWithholdingResult(TxnsWithholdingModel withholding,String payorderno){
         TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", payorderno).get(0);
         txnsQuickpay.setPayfinishtime(DateUtil.getCurrentDateTime());
@@ -185,7 +196,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.update(txnsQuickpay);
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateTestSign(ResultBean bean,String payorderno) {
         // TODO Auto-generated method stub
         ReaPayResultBean realPayPayResultBean = (ReaPayResultBean)bean.getResultObj();
@@ -201,7 +212,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.update(txnsQuickpay);
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateTestPaySign(ResultBean bean,String payorderno) {
         // TODO Auto-generated method stub
         ReaPayResultBean realPayPayResultBean = (ReaPayResultBean)bean.getResultObj();
@@ -223,7 +234,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param onlineDepositShortBean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveOnlineDepositShort(TradeBean trade,OnlineDepositShortBean onlineDepositShortBean) {
         // TODO Auto-generated method stub
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,onlineDepositShortBean);
@@ -235,7 +246,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param bean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateOnlineDepositShort(ResultBean bean) {
         // TODO Auto-generated method stub
         ZLPayResultBean zlPayResultBean = (ZLPayResultBean)bean.getResultObj();
@@ -256,7 +267,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param bean
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateReaPaySMS(ResultBean bean,String payorderno) {
         ReaPayResultBean resultBean = (ReaPayResultBean)bean.getResultObj();
         TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", payorderno).get(0);
@@ -279,14 +290,14 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveReaPayCreditSign(TradeBean trade, CreditBean creditBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,creditBean);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveTestCreditSign(TradeBean trade, CreditBean creditBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,creditBean);
         super.save(txnsQuickpay);
@@ -297,7 +308,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @param trade
      * @return
      */
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveCMBCOuterBankSign(TradeBean trade) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,TradeTypeEnum.BANKSIGN);
         super.save(txnsQuickpay);
@@ -311,20 +322,20 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveReaPayToPay(TradeBean trade, PayBean payBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,payBean);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveTestToPay(TradeBean trade, PayBean payBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,payBean,"");
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateReaPayToPay(ResultBean bean,String payorderno) {
         // TODO Auto-generated method stub
         ReaPayResultBean zlPayResultBean = (ReaPayResultBean)bean.getResultObj();
@@ -346,13 +357,13 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveReaPayQuery(TradeBean trade, QueryBean queryBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,queryBean);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateReaPayQuery(ResultBean bean,String payorderno) {
         // TODO Auto-generated method stub
         ReaPayResultBean zlPayResultBean = (ReaPayResultBean)bean.getResultObj();
@@ -374,13 +385,13 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveReaPayBindSign(TradeBean trade, BindBean bindBean) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,bindBean);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveTestBindSign(TradeBean trade, BindBean bindBean){
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,bindBean,"");
         super.save(txnsQuickpay);
@@ -393,6 +404,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public List<TxnsQuickpayModel> queryTxnsByOrderNo(String orderNo) {
         return (List<TxnsQuickpayModel>) super.queryByHQL(" from TxnsQuickpayModel where relateorderno = ? and paycode = ? ", new Object[]{orderNo,"1001"});
     }
@@ -402,6 +414,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
      * @return
      */
     @Override
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String getReapayOrderNo(String txnseqno) {
         List<TxnsQuickpayModel> quickpayList =  (List<TxnsQuickpayModel>) super.queryByHQL(" from TxnsQuickpayModel where relatetradetxnseqno = ? order by id desc", new Object[]{txnseqno});
         if(quickpayList.size()>0){
@@ -410,28 +423,28 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         return null;
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveCMBCOuterWithholding(TradeBean trade){
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,TradeTypeEnum.SUBMITPAY);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
     @Override
-    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateCMBCSMSResult(String payorder,String retcode,String retinfo) {
         // TODO Auto-generated method stub
         String hql = "update TxnsQuickpayModel set payretcode=?,payretinfo=?,payfinishtime=?,status=? where payorderno=?";
         super.updateByHQL(hql, new Object[]{retcode,retinfo,DateUtil.getCurrentDateTime(),"00",payorder});
     }
     @Override
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveCMBCOuterBankCardSign(TradeBean trade) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel(trade,TradeTypeEnum.BANKSIGN);
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveBossBankCardSign(TradeBean trade) {
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel();
         txnsQuickpay.setId(OrderNumber.getInstance().generateID());
@@ -453,6 +466,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         return txnsQuickpay.getPayorderno();
     }
     
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateBossBankCardSign(String payorderno,String retCode,String retInfo) {
     	 TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", payorderno).get(0);
          txnsQuickpay.setPayfinishtime(DateUtil.getCurrentDateTime());
@@ -462,7 +476,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
          super.update(txnsQuickpay);
     }
     
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveBossPay(TradeBean trade){
         TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel();
         txnsQuickpay.setId(OrderNumber.getInstance().generateID());
@@ -483,7 +497,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.save(txnsQuickpay);
         return txnsQuickpay.getPayorderno();
     }
-    @Transactional(propagation=Propagation.REQUIRES_NEW)
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateBossPayResult(String payorderno,String retCode,String retInfo,String retorderno){
         TxnsQuickpayModel txnsQuickpay = super.findByProperty("payorderno", payorderno).get(0);
         txnsQuickpay.setRetorderno(retorderno);
@@ -494,7 +508,7 @@ public class TxnsQuickpayServiceImpl extends BaseServiceImpl<TxnsQuickpayModel, 
         super.update(txnsQuickpay);
     }
     
-    @Transactional
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public String saveBossPaySMS(TradeBean trade) {
     	 TxnsQuickpayModel txnsQuickpay = new TxnsQuickpayModel();
          txnsQuickpay.setId(OrderNumber.getInstance().generateID());
