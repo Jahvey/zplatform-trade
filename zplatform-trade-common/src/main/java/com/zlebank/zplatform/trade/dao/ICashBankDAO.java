@@ -25,6 +25,7 @@ import com.zlebank.zplatform.trade.model.CashBankModel;
  */
 public interface ICashBankDAO extends BaseDAO<CashBankModel>{
     Session getSession();
+
     /**
  	 * 获取银行图标
  	 * @param bankCode

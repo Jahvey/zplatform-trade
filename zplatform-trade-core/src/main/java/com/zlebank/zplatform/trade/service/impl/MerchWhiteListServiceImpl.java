@@ -115,3 +115,4 @@ public class MerchWhiteListServiceImpl implements MerchWhiteListService{
         return rtn;
     }
 }
+

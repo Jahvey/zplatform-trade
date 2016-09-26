@@ -99,9 +99,6 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
 				}
 				//判断异步通知是否成功
 				TxnsNotifyTaskModel asyncNotifyTask = txnsNotifyTaskService.getAsyncNotifyTask(notifyQueueBean.getTxnseqno());
-				if(asyncNotifyTask==null){
-					tradeQueueService.addNotifyQueue(notifyQueueBean);
-				}
 				if("00".equals(asyncNotifyTask.getSendStatus())){
 					log.info("【异步通知队列数据,txnseqno:"+notifyQueueBean.getTxnseqno()+"异步通知完成】");
 					continue;
@@ -267,7 +264,7 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
              String privateKey= "";
              if("000204".equals(orderinfo.getBiztype())){
             	 privateKey = coopInstiService.getCoopInstiMK(orderinfo.getFirmemberno(), TerminalAccessType.WIRELESS).getZplatformPriKey();
-             }else if("000201".equals(orderinfo.getBiztype())||"000205".equals(orderinfo.getBiztype())||"000207".equals(orderinfo.getBiztype())){
+             }else if("000201".equals(orderinfo.getBiztype())||"000205".equals(orderinfo.getBiztype())){
             	 if("0".equals(orderinfo.getAccesstype())){
                  	privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
                  }else if("2".equals(orderinfo.getAccesstype())){
@@ -294,6 +291,62 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
         return resultBean;
     }
 	
+	public ResultBean generateAsyncRespMessageExt(String txnseqno){
+        ResultBean resultBean = null;
+        try {
+            TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderByTxnseqno(txnseqno);
+            if(StringUtil.isEmpty(orderinfo.getBackurl())){
+            	return new ResultBean("09", "no need async");
+            }else {
+				if(orderinfo.getBackurl().indexOf("http")<0){
+					return new ResultBean("09", "no need async");
+				}
+			}
+            TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(orderinfo.getRelatetradetxn());
+             String version="v1.0";// 网关版本
+             String encoding="1";// 编码方式
+             String certId="";// 证书 ID
+             String signature="";// 签名
+             String signMethod="01";// 签名方法
+             String merId=txnsLog.getAccfirmerno();// 商户代码
+             String orderId=txnsLog.getAccordno();// 商户订单号
+             String txnType=orderinfo.getTxntype();// 交易类型
+             String txnSubType=orderinfo.getTxnsubtype();// 交易子类
+             String bizType=orderinfo.getBiztype();// 产品类型
+             String accessType="2";// 接入类型
+             String txnTime=orderinfo.getOrdercommitime();// 订单发送时间
+             String txnAmt=orderinfo.getOrderamt()+"";// 交易金额
+             String currencyCode="156";// 交易币种
+             String reqReserved=orderinfo.getReqreserved();// 请求方保留域
+             String reserved="";// 保留域
+             String queryId=txnsLog.getTradeseltxn();// 交易查询流水号
+             String respCode=txnsLog.getRetcode();// 响应码
+             String respMsg=txnsLog.getRetinfo();// 应答信息
+             String settleAmt="";// 清算金额
+             String settleCurrencyCode="";// 清算币种
+             String settleDate=txnsLog.getAccsettledate();// 清算日期
+             String traceNo=txnsLog.getTradeseltxn();// 系统跟踪号
+             String traceTime=DateUtil.getCurrentDateTime();// 交易传输时间
+             String exchangeDate="";// 兑换日期
+             String exchangeRate="";// 汇率
+             String accNo="";// 账号
+             String payCardType="";// 支付卡类型
+             String payType="";// 支付方式
+             String payCardNo="";// 支付卡标识
+             String payCardIssueName="";// 支付卡名称
+             String bindId="";// 绑定标识号
+             OrderAsynRespBean orderRespBean = new OrderAsynRespBean(version, encoding, certId, signature, signMethod, merId, orderId, txnType, txnSubType, bizType, accessType, txnTime, txnAmt, currencyCode, reqReserved, reserved, queryId, respCode, respMsg, settleAmt, settleCurrencyCode, settleDate, traceNo, traceTime, exchangeDate, exchangeRate, accNo, payCardType, payType, payCardNo, payCardIssueName, bindId);
+             String privateKey= "";
+             privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
+             resultBean = new ResultBean(generateAsyncOrderResult(orderRespBean, privateKey.trim()));
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            resultBean = new ResultBean("RC99", "系统异常");
+        }
+        return resultBean;
+    }
+	
 	public OrderAsynRespBean generateAsyncOrderResult(OrderAsynRespBean orderAsyncRespBean,String privateKey) throws Exception{   
         String[] unParamstring = {"signature"};
         String dataMsg = ObjectDynamic.generateParamer(orderAsyncRespBean, false, unParamstring).trim();
@@ -310,6 +363,35 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
         //orderAsyncRespBean.setSignature(URLEncoder.encode(RSAUtils.sign(data, privateKey),"utf-8").getBytes());
         return orderAsyncRespBean;
     }
+
+
+
+	@Override
+	public void notifyExt(String txnseqno) {
+
+		/**异步通知处理开始 **/
+        try {
+			ResultBean orderResp = 
+			        generateAsyncRespMessageExt(txnseqno);
+			TxnsOrderinfoModel gatewayOrderBean = txnsOrderinfoDAO.getOrderByTxnseqno(txnseqno);
+			Thread notifyThread = null;
+			if (orderResp.isResultBool()) {
+				OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp
+                        .getResultObj();
+        		notifyThread=new SynHttpRequestThread(
+                		StringUtil.isNotEmpty(gatewayOrderBean.getSecmemberno())?gatewayOrderBean.getSecmemberno():gatewayOrderBean.getFirmemberno(),
+                        gatewayOrderBean.getRelatetradetxn(),
+                        gatewayOrderBean.getBackurl(),
+                        respBean.getNotifyParam());
+				AsyncNotifyThreadPool.getInstance().executeMission(notifyThread);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+		
+	}
 
 	
 }

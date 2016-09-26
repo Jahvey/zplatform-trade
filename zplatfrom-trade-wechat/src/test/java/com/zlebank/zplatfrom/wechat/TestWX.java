@@ -126,6 +126,7 @@ public class TestWX {
 		log.info("【退款返回结果】" + JSONObject.fromObject(refund));
 	}
 
+	
 	/**
 	 * @param args
 	 * @throws WXVerifySignFailedException

@@ -1,12 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  
-
   <modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-deploy</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 		<relativePath>../zplatform-trade-deploy/pom.xml</relativePath>
 	</parent>
 	<artifactId>zplatform-trade-timeout</artifactId>
@@ -21,7 +19,7 @@
 	<dependency>
 			<groupId>com.zlebank.zplatform</groupId>
 			<artifactId>zplatform-trade-acc</artifactId>
-			<version>1.5.0-SNAPSHOT</version>
+			<version>1.6.0-SNAPSHOT</version>
 		</dependency>
 	<dependency>
 			<groupId>javax.servlet</groupId>
@@ -33,27 +31,27 @@
 	<dependency>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-chanpay</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-cmbc</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatfrom-trade-wechat</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-reapay</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 	</dependency>
 	<dependency>
 		<groupId>com.zlebank.zplatform</groupId>
 		<artifactId>zplatform-trade-wechat-qr</artifactId>
-		<version>1.5.0-SNAPSHOT</version>
+		<version>1.6.0-SNAPSHOT</version>
 	</dependency>
   </dependencies>
 </project>

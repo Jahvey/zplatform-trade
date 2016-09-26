@@ -26,5 +26,10 @@ public interface TradeNotifyService {
 	 */
 	public void notify(String txnseqno);
 	
+	/**
+	 * @param txnseqno
+	 */
+	public void notifyExt(String txnseqno);
+	
 	public void queueNotfiy();
 }
