@@ -60,10 +60,7 @@ public class AccountTradeColler {
         Map<String, Object> model = new HashMap<String, Object>();
         try {
         	this.accountTradeService.bailAccountRecharge(order);
-        }  catch (TradeException e) {
-            model.put("errMsg", e.getMessage());
-            model.put("errCode", e.getCode());
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             model.put("errMsg", "订单信息错误，请重新提交");
             model.put("errCode", "RC99");
