@@ -232,7 +232,9 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 			log.debug(JSON.toJSONString(trade));
 		}
 		trade.setPayinstiId(PAYINSTID);
-		sendSms(trade);
+		if("0".equals(trade.getSmsFlag())){
+			sendSms(trade);
+		}
 		resultBean = new ResultBean("success");
 		log.info("CMBC withholding bank sign end!");
 		return resultBean;

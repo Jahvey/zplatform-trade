@@ -31,6 +31,7 @@ public class WapSMSMessageBean {
     private String accessType;
     private String tn;
     private String bindId;
+    private String smsFlag;
     
     /**
      * @return the version
@@ -176,6 +177,18 @@ public class WapSMSMessageBean {
     public void setBindId(String bindId) {
         this.bindId = bindId;
     }
+	/**
+	 * @return the smsFlag
+	 */
+	public String getSmsFlag() {
+		return smsFlag;
+	}
+	/**
+	 * @param smsFlag the smsFlag to set
+	 */
+	public void setSmsFlag(String smsFlag) {
+		this.smsFlag = smsFlag;
+	}
     
     
 }

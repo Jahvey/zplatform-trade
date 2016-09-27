@@ -56,7 +56,7 @@ public class TransferAccounting implements IAccounting{
     public TransferAccounting(){
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
         accEntryService = (AccEntryService) SpringContext.getContext().getBean("accEntryServiceImpl");
-         }
+    }
     /**
      *
      * @param txnseqno

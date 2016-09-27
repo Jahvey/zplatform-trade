@@ -121,7 +121,7 @@ public class TradeBean implements Serializable,Cloneable{
     
     private String devId;
     
-    
+    private String smsFlag;
     
     public String getDevId() {
 		return devId;
@@ -854,6 +854,18 @@ public class TradeBean implements Serializable,Cloneable{
 	 */
 	public void setPayOrderNo(String payOrderNo) {
 		this.payOrderNo = payOrderNo;
+	}
+	/**
+	 * @return the smsFlag
+	 */
+	public String getSmsFlag() {
+		return smsFlag;
+	}
+	/**
+	 * @param smsFlag the smsFlag to set
+	 */
+	public void setSmsFlag(String smsFlag) {
+		this.smsFlag = smsFlag;
 	}
     
     

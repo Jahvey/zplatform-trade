@@ -2300,6 +2300,7 @@ public class GateWayServiceImpl extends
 			trade.setCardId(card.getId());
 			trade.setReaPayOrderNo(OrderNumber.getInstance()
 	                .generateReaPayOrderId());
+			trade.setSmsFlag(smsMessageBean.getSmsFlag());
 			IQuickPayTrade quickPayTrade = null;
 			try {
 				quickPayTrade = TradeAdapterFactory.getInstance()

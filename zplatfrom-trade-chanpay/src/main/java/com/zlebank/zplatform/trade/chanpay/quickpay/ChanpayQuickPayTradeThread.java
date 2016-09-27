@@ -107,7 +107,10 @@ public class ChanpayQuickPayTradeThread implements IQuickPayTrade{
 				if(cardBind==null){//未签署协议
 					resultBean = chanPayQuickPayService.protocolSign(trade);
 				}else{//已签署协议
-					return sendSms(trade);
+					if("0".equals(trade.getSmsFlag())){
+						return sendSms(trade);
+					}
+					return resultBean;
 				}
 			}
 		} catch (TradeException e) {
@@ -116,7 +119,9 @@ public class ChanpayQuickPayTradeThread implements IQuickPayTrade{
 			resultBean = new ResultBean(e.getCode(), e.getMessage());
 		}
 		if(resultBean.isResultBool()){
-			resultBean = sendSms(trade);
+			if("0".equals(trade.getSmsFlag())){
+				resultBean = sendSms(trade);
+			}
 		}
 		return resultBean;
 	}
