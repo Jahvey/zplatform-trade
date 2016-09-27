@@ -371,7 +371,18 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			throw new CommonException(AccTradeExcepitonEnum.BC08.getErrorCode());//只有企业会员才有保证金账户
+			//throw new CommonException(AccTradeExcepitonEnum.BC08.getErrorCode());//只有企业会员才有保证金账户
+			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
+			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 13));
+			txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 12));
+			txnsLog.setFeever(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 11));
+			txnsLog.setPrdtver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 10));
+			txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 20));
 		}
 		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
@@ -471,7 +482,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		log.info("保证金充值账务处理结束"+txnsLog.getTxnseqno());
 		/***********异步通知**********************/
 		/**异步通知处理开始  **/
-		if(StringUtil.isNotEmpty(orderinfo.getBackurl())){
+		if(type.equals(MemberType.ENTERPRISE)&&StringUtil.isNotEmpty(orderinfo.getBackurl())){
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
@@ -570,7 +581,18 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			throw new CommonException(AccTradeExcepitonEnum.BW08.getErrorCode());//此业务只允许是企业会员
+			//throw new CommonException(AccTradeExcepitonEnum.BW08.getErrorCode());//此业务只允许是企业会员
+			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
+			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 13));
+			txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 12));
+			txnsLog.setFeever(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 11));
+			txnsLog.setPrdtver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 10));
+			txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 20));
 		}
 		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
@@ -658,7 +680,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		log.info("保证金提取账务处理结束"+txnsLog.getTxnseqno());
 		/***********异步通知**********************/
 		/**异步通知处理开始  **/
-		if(StringUtil.isNotEmpty(orderinfo.getBackurl())){
+		if(type.equals(MemberType.ENTERPRISE) && StringUtil.isNotEmpty(orderinfo.getBackurl())){
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
