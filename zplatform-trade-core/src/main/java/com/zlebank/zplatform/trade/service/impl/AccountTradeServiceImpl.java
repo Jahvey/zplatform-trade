@@ -47,6 +47,8 @@ import com.zlebank.zplatform.trade.bean.gateway.QueryAccBean;
 import com.zlebank.zplatform.trade.bean.gateway.QueryAccResultBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
+import com.zlebank.zplatform.trade.exception.CommonException;
+import com.zlebank.zplatform.trade.exception.CommonException;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
 import com.zlebank.zplatform.trade.model.TxncodeDefModel;
@@ -58,6 +60,7 @@ import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
+import com.zlebank.zplatform.trade.service.enums.AccTradeExcepitonEnum;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
 import com.zlebank.zplatform.trade.utils.UUIDUtil;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
@@ -91,11 +94,11 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
   
     @Override
 	@Transactional
-	public QueryAccResultBean queryMemberBalance(QueryAccBean query) throws TradeException {
+	public QueryAccResultBean queryMemberBalance(QueryAccBean query) throws CommonException {
     	QueryAccResultBean result =new QueryAccResultBean();
     	ResultBean valBean = ValidateLocator.validateBeans(query);
     	if(!valBean.isResultBool()){
-    		throw  new TradeException("QA00");
+    		throw  new CommonException(AccTradeExcepitonEnum.AQ00.getErrorCode());
     	} 
     	//判断双方会员的基本账户状态是否正常 
 		PojoMember member = this.memberService.getMbmberByMemberId(query.getMemberId(), null);
@@ -114,18 +117,18 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		} catch (DataCheckFailedException | GetAccountFailedException e) {
 			e.printStackTrace();
 			log.error("查询余额失败:"+e.getMessage());
-			throw new TradeException("QA01");
+			throw new CommonException(AccTradeExcepitonEnum.AQ01.getErrorCode());
 		}
 		return result;
 	}
 	@Override
 	@Transactional
-	public String transfer(TransferOrderBean order) throws TradeException {
+	public String transfer(TransferOrderBean order) throws CommonException {
 		 log.info("转账处理开始");
          log.info(JSONObject.fromObject(order));
          ResultBean resultBean = ValidateLocator.validateBeans(order);
          if(!resultBean.isResultBool()){
-        	 throw  new TradeException("TE00");
+        	 throw  new CommonException(AccTradeExcepitonEnum.TE00.getErrorCode());
          }
 		/*******保存订单的日志*******/
 		//基本信息
@@ -139,7 +142,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			String orign_memberId = txnsLog.getAccmemberid();
 			String new_memberId = order.getToMerId();
 			if (!orign_memberId.equals(new_memberId)) {
-				throw new TradeException("TE01");//会员信息有误
+				throw new CommonException(AccTradeExcepitonEnum.TE01.getErrorCode());//会员信息有误
 			}
 			return orderinfoList.get(0).getRelatetradetxn();
 		}
@@ -147,33 +150,33 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxncodeDefModel busiModel = txncodeDefService.getBusiCode(
 				order.getTxnType(), order.getTxnSubType(), order.getBizType());
 		if(busiModel==null){
-			throw new TradeException("TE02");//交易类型有误
+			throw new CommonException(AccTradeExcepitonEnum.TE02.getErrorCode());//交易类型有误
 		}
 		//转账业务
 		if(!busiModel.getBusitype().equals(BusiType.TRANSFER.getCode())){
-			throw new TradeException("TE03");//只有转账业务才能处理
+			throw new CommonException(AccTradeExcepitonEnum.TE03.getErrorCode());//只有转账业务才能处理
 		}
 		//判断双方会员的基本账户状态是否正常 
 		PojoMember fromMember =this.getMemberInfo(order.getFromMerId());
 		if(fromMember == null){
-			throw new TradeException("TE04");//付款方不存在
+			throw new CommonException(AccTradeExcepitonEnum.TE04.getErrorCode());//付款方不存在
 		}
 		PojoMember toMember =this.getMemberInfo(order.getToMerId());
 		if(toMember ==null){
-			throw new TradeException("TE05");//收款方不存在
+			throw new CommonException(AccTradeExcepitonEnum.TE05.getErrorCode());//收款方不存在
 		}
 		String  accinfo =this.checkMemberAccInfo(order.getFromMerId(), order.getTxnAmt());
 		if(StringUtil.isNotEmpty(accinfo)){
 			if(accinfo.equals("account")){
-				throw new TradeException("TE06");//付款方未开通基本账户
+				throw new CommonException(AccTradeExcepitonEnum.TE06.getErrorCode());//付款方未开通基本账户
 			}else if(accinfo.equals("balance")){
-				throw new TradeException("TE07");//余额不足
+				throw new CommonException(AccTradeExcepitonEnum.TE07.getErrorCode());//余额不足
 			}
 		}
 		String  toAccinfo =this.checkMemberAccInfo(order.getToMerId(), null);
 		if(StringUtil.isNotEmpty(toAccinfo)){
 			if(toAccinfo.equals("account")){
-				throw new TradeException("TE08");//收款方未开通基本账户
+				throw new CommonException(AccTradeExcepitonEnum.TE08.getErrorCode());//收款方未开通基本账户
 			}
 		}
 		/*******保存订单的日志*******/
@@ -258,7 +261,14 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setMemberid(order.getToMerId());
 		orderinfo.setCurrencycode("156");
 		orderinfo.setPayerip(order.getCustomerIp());
-		txnsLogService.saveTxnsLog(txnsLog);
+		try {
+			txnsLogService.saveTxnsLog(txnsLog);
+		} catch (TradeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			log.error(e1.getMessage());
+			throw new CommonException(AccTradeExcepitonEnum.TE09.getErrorCode());
+		}
 		saveOrderInfo(orderinfo);
 		log.info("转账订单保存结束"+txnsLog.getTxnseqno());
 		/***********账户账务**********************/
@@ -292,13 +302,13 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	
 	@Override
 	@Transactional
-	public String bailAccountRecharge(BailRechargeOrderBean order) throws TradeException {
+	public String bailAccountRecharge(BailRechargeOrderBean order) throws CommonException {
 		log.info("保证金充值处理开始");
         log.info(JSONObject.fromObject(order));
 		/*******保存订单的日志*******/
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if(!resultBean.isResultBool()){
-        	 throw  new TradeException("BC00");
+        	 throw  new CommonException(AccTradeExcepitonEnum.BC00.getErrorCode());
         }
 		//基本信息
 		//判断订单是否存在
@@ -311,7 +321,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			String orign_memberId = txnsLog.getAccmemberid();
 			String new_memberId = order.getFromMerId();
 			if (!orign_memberId.equals(new_memberId)) {
-				throw new TradeException("BC01");//会员信息有误
+				throw new CommonException(AccTradeExcepitonEnum.BC01.getErrorCode());//会员信息有误
 			}
 			return orderinfoList.get(0).getRelatetradetxn();
 		}
@@ -319,30 +329,30 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxncodeDefModel busiModel = txncodeDefService.getBusiCode(
 				order.getTxnType(), order.getTxnSubType(), order.getBizType());
 		if(busiModel==null){
-			throw new TradeException("BC02");//交易类型有误
+			throw new CommonException(AccTradeExcepitonEnum.BC02.getErrorCode());//交易类型有误
 		}
 		//保证金业务
 		if(!busiModel.getBusicode().equals(BusinessEnum.BAIL_RECHARGE.getBusiCode())){
-			throw new TradeException("BC04");//只有充值业务才能处理
+			throw new CommonException(AccTradeExcepitonEnum.BC03.getErrorCode());//只有充值业务才能处理
 		}
 		//判断双方会员的基本账户状态是否正常 
 		PojoMember fromMember =this.getMemberInfo(order.getFromMerId());
 		if(fromMember == null){
-			throw new TradeException("BC05");//付款方不存在
+			throw new CommonException(AccTradeExcepitonEnum.BC04.getErrorCode());//付款方不存在
 		}
 		String  toAccinfo =this.checkMarginAccInfo(order.getFromMerId(), null);
 		if(StringUtil.isNotEmpty(toAccinfo)){
 			if(toAccinfo.equals("account")){
-				throw new TradeException("BC06");//未开通保证金账户
+				throw new CommonException(AccTradeExcepitonEnum.BC05.getErrorCode());//未开通保证金账户
 			}
 		}
 		//校验法人信息
 		EnterpriseBean enterprise =this.enterpriseService.getEnterpriseByMemberId(order.getFromMerId());
 		if(enterprise==null){
-			throw new TradeException("BC07");//企业信息不存在
+			throw new CommonException(AccTradeExcepitonEnum.BC06.getErrorCode());//企业信息不存在
 		}
 		if(!enterprise.getCorporation().equals(order.getCorporateName())||!enterprise.getCorpNo().equals(order.getCorporateCertId())){
-			throw new TradeException("BC08");//法人信息有误
+			throw new CommonException(AccTradeExcepitonEnum.BC07.getErrorCode());//法人信息有误
 		}
 		
 		/*******保存订单的日志*******/
@@ -361,7 +371,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			throw new TradeException("BC09");//只有企业会员才有保证金账户
+			throw new CommonException(AccTradeExcepitonEnum.BC08.getErrorCode());//只有企业会员才有保证金账户
 		}
 		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
@@ -419,7 +429,14 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
 		orderinfo.setCurrencycode("156");
-		txnsLogService.saveTxnsLog(txnsLog);
+		try {
+			txnsLogService.saveTxnsLog(txnsLog);
+		} catch (TradeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			log.error(e1.getMessage());
+			throw new CommonException(AccTradeExcepitonEnum.BC09.getErrorCode());
+		}
 		saveOrderInfo(orderinfo);
 		log.info("保证金充值订单保存结束"+txnsLog.getTxnseqno());
 		/***************调渠道对对公账户进行充值******************/
@@ -483,13 +500,13 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 
 	@Override
 	@Transactional
-	public String bailAccountWithdraw(BailWithdrawOrderBean order) throws TradeException {
+	public String bailAccountWithdraw(BailWithdrawOrderBean order) throws CommonException {
 		log.info("保证金提取处理开始");
         log.info(JSONObject.fromObject(order));
 		/*******保存订单的日志*******/
         ResultBean resultBean = ValidateLocator.validateBeans(order);
         if(!resultBean.isResultBool()){
-        	 throw  new TradeException("BW00");
+        	 throw  new CommonException(AccTradeExcepitonEnum.BW00.getErrorCode());
         }
 		//基本信息
 		//判断订单是否存在
@@ -502,7 +519,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			String orign_memberId = txnsLog.getAccmemberid();
 			String new_memberId = order.getFromMerId();
 			if (!orign_memberId.equals(new_memberId)) {
-				throw new TradeException("BW01");//会员信息有误
+				throw new CommonException(AccTradeExcepitonEnum.BW01.getErrorCode());//会员信息有误
 			}
 			return orderinfoList.get(0).getRelatetradetxn();
 		}
@@ -510,31 +527,31 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxncodeDefModel busiModel = txncodeDefService.getBusiCode(
 				order.getTxnType(), order.getTxnSubType(), order.getBizType());
 		if(busiModel==null){
-			throw new TradeException("BW02");//交易类型有误
+			throw new CommonException(AccTradeExcepitonEnum.BW02.getErrorCode());//交易类型有误
 		}
 		//保证金业务
 		if(!busiModel.getBusicode().equals(BusinessEnum.BAIL_WITHDRAWALS.getBusiCode())){
-			throw new TradeException("BW03");//保证金业务
+			throw new CommonException(AccTradeExcepitonEnum.BW03.getErrorCode());//保证金业务
 		}
 		//判断双方会员的基本账户状态是否正常 
 		PojoMember fromMember =this.getMemberInfo(order.getFromMerId());
 		if(fromMember == null){
-			throw new TradeException("BW04");//付款方不存在
+			throw new CommonException(AccTradeExcepitonEnum.BW04.getErrorCode());//付款方不存在
 		}
 		//检查基本账户
 		String basicAcc = this.checkMemberAccInfo(order.getFromMerId(), null);
 		if(StringUtil.isNotEmpty(basicAcc)){
 			if(basicAcc.equals("account")){
-				throw new TradeException("BW05");//请检查资金账户是否正常 
+				throw new CommonException(AccTradeExcepitonEnum.BW05.getErrorCode());//请检查资金账户是否正常 
 			}
 		}
 		//检查保证金账户
 		String  toAccinfo =this.checkMarginAccInfo(order.getFromMerId(), order.getTxnAmt());
 		if(StringUtil.isNotEmpty(toAccinfo)){
 			if(toAccinfo.equals("account")){
-				throw new TradeException("BW06");//请检查资金账户是否正常 
+				throw new CommonException(AccTradeExcepitonEnum.BW06.getErrorCode());//请检查资金账户是否正常 
 			}else if(toAccinfo.equals("banlance")){
-				throw new TradeException("BW07");//提取保证金额不足
+				throw new CommonException(AccTradeExcepitonEnum.BW07.getErrorCode());//提取保证金额不足
 			}
 		}
 		/*******保存订单的日志*******/
@@ -553,7 +570,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			throw new TradeException("BW08");//此业务只允许是企业会员
+			throw new CommonException(AccTradeExcepitonEnum.BW08.getErrorCode());//此业务只允许是企业会员
 		}
 		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
@@ -606,7 +623,14 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
 		orderinfo.setCurrencycode("156");
-		txnsLogService.saveTxnsLog(txnsLog);
+		try {
+			txnsLogService.saveTxnsLog(txnsLog);
+		} catch (TradeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			log.error(e1.getMessage());
+			throw new CommonException(AccTradeExcepitonEnum.BW09.getErrorCode());
+		}
 		saveOrderInfo(orderinfo);
 		log.info("保证金提取订单保存结束"+txnsLog.getTxnseqno());
 		//账务处理
@@ -794,10 +818,10 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	 * @param busicode
 	 * @param i
 	 * @return
-	 * @throws TradeException 
+	 * @throws CommonException 
 	 */
 	@SuppressWarnings("unchecked")
-	private String getDefaultVerInfo(String instiCode, String busicode,int verType) throws TradeException {
+	private String getDefaultVerInfo(String instiCode, String busicode,int verType) throws CommonException {
 		List<Map<String, Object>> resultList = (List<Map<String, Object>>) super
 				.queryBySQL(
 						"select COOP_INSTI_CODE,BUSI_CODE,VER_TYPE,VER_VALUE from T_NONMER_DEFAULT_CONFIG where COOP_INSTI_CODE=? and BUSI_CODE=? and VER_TYPE=?",
@@ -806,7 +830,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			Map<String, Object> valueMap = resultList.get(0);
 			return valueMap.get("VER_VALUE").toString();
 		}
-		throw new TradeException("GW03");
+		throw new CommonException(AccTradeExcepitonEnum.GW03.getErrorCode());
 	}
 	/***
 	 * 获得手续费
