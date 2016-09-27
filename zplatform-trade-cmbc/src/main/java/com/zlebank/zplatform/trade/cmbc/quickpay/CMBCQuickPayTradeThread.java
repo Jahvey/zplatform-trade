@@ -264,3 +264,4 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 
 	}
 }
+

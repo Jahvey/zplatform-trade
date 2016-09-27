@@ -34,7 +34,6 @@ public class TransferBatchDAOTest {
     }
 
     @Test
-    @Ignore
     public void testQueryWaitTrialTranData() {
         List<PojoTranData> tranDatas = transferBatchDAO
                 .queryWaitTrialTranData(11);

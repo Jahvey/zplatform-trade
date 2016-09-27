@@ -71,7 +71,7 @@ import com.zlebank.zplatform.wechat.wx.common.XMLParser;
  */
 public class WXApplication {
     
-//    private static final String CREATE_ORDER_URL= "http://127.0.0.1:8080/zplatform-sdk-api/interface/wx.htm";
+   // private static final String CREATE_ORDER_URL= "http://127.0.0.1:8081/zplatform-sdk-api/interface/wx.htm";
     /**下订单URL**/
     private static final String CREATE_ORDER_URL= ConsUtil.getInstance().cons.getWechat_create_order_url();//"https://api.mch.weixin.qq.com/pay/unifiedorder";
     /**下载对账单URL**/

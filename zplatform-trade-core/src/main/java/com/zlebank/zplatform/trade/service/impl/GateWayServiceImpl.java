@@ -242,6 +242,8 @@ public class GateWayServiceImpl extends
 				if ("01".equals(merchMk.getSafeType())) {
 					publicKey = merchMk.getMemberPubKey();
 				}
+				
+		
 				if (!RSAUtils.verify(paraMsg, publicKey, order.getSignature())) {
 					resultBean = new ResultBean("RC03", "验签失败");
 					return resultBean;
