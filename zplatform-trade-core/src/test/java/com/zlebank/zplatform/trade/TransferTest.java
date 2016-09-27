@@ -9,12 +9,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.alibaba.fastjson.JSON;
-import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
-import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.QueryAccBean;
 import com.zlebank.zplatform.trade.bean.gateway.QueryAccResultBean;
-import com.zlebank.zplatform.trade.exception.TradeException;
-import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
+import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
+import com.zlebank.zplatform.trade.exception.CommonException;
 import com.zlebank.zplatform.trade.service.IAccoutTradeService;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/*.xml")
@@ -72,7 +70,7 @@ public class TransferTest {
 		try {
 			QueryAccResultBean result=this.transferService.queryMemberBalance(query);
 			log.info("余额查询结果"+query.getMemberId()+JSON.toJSONString(result));
-		} catch (TradeException e) {
+		} catch (CommonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
