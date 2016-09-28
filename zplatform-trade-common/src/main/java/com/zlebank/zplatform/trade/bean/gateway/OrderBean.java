@@ -119,7 +119,11 @@ public class OrderBean implements Serializable{
     @Length(max=32,message="param.error.orderDesc")
     private String orderDesc="";
     
+    /**产品代码**/
     private String productcode;
+    
+    /**行业代码**/
+    private String industryCode;
     /**
      * @return the version
      */
@@ -588,6 +592,20 @@ public class OrderBean implements Serializable{
 	 */
 	public void setProductcode(String productcode) {
 		this.productcode = productcode;
+	}
+	
+	
+	/**
+	 * @return the industryCode
+	 */
+	public String getIndustryCode() {
+		return industryCode;
+	}
+	/**
+	 * @param industryCode the industryCode to set
+	 */
+	public void setIndustryCode(String industryCode) {
+		this.industryCode = industryCode;
 	}
 	/**
 	 * @param version

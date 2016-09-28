@@ -348,4 +348,15 @@ public interface ITxnsLogService extends IBaseService<TxnsLogModel, String>{
 	 * @param payPartyBean
 	 */
 	public void updateTradeData(PayPartyBean payPartyBean);
+	
+	/**
+	 * 获取合作机构默认版本
+	 * @param instiCode
+	 * @param busicode
+	 * @param verType
+	 * @return
+	 * @throws TradeException
+	 */
+	public String getDefaultVerInfo(String instiCode, String busicode,
+			int verType) throws TradeException;
 }
