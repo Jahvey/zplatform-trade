@@ -19,6 +19,7 @@ import com.zlebank.zplatform.trade.adapter.accounting.impl.RefundAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.SafeGuardMoneyAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.TransferAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.WithdrawAccounting;
+import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 
 /**
  * Class Description
@@ -79,7 +80,27 @@ public class AccountingAdapterFactory {
 			default:
 				break;
 		}
-
 		return accounting;
 	}
+	
+	
+	
+	public IAccounting getAccounting(BusinessEnum code) {
+		IAccounting accounting = null;
+		switch (code) {
+			/*case CREDIT_RECHARGE:
+				accounting = new CreditRechargeAccounting();
+				break;
+			case CREDIT_CONSUME:
+				accounting = new CreditConsumeAccounting();
+				break;
+			case CREDIT_REFUND:
+				accounting = new CreditRefundAccounting();
+				break;
+			default:
+				break;*/
+		}
+		return accounting;
+		}
+		
 }

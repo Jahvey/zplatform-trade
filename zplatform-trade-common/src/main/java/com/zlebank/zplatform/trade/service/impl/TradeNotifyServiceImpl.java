@@ -30,6 +30,7 @@ import com.zlebank.zplatform.commons.utils.security.AESUtil;
 import com.zlebank.zplatform.commons.utils.security.RSAHelper;
 import com.zlebank.zplatform.member.bean.MerchMK;
 import com.zlebank.zplatform.member.bean.enums.TerminalAccessType;
+import com.zlebank.zplatform.member.service.CoopInstiMKService;
 import com.zlebank.zplatform.member.service.CoopInstiService;
 import com.zlebank.zplatform.member.service.MerchMKService;
 import com.zlebank.zplatform.trade.bean.ResultBean;
@@ -65,6 +66,8 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
 	
 	@Autowired
 	private MerchMKService merchMKService;
+	@Autowired
+	private CoopInstiMKService coopInstiMKService;
 	@Autowired
 	private ITxnsOrderinfoDAO txnsOrderinfoDAO;
 	@Autowired
@@ -337,7 +340,11 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
              String bindId="";// 绑定标识号
              OrderAsynRespBean orderRespBean = new OrderAsynRespBean(version, encoding, certId, signature, signMethod, merId, orderId, txnType, txnSubType, bizType, accessType, txnTime, txnAmt, currencyCode, reqReserved, reserved, queryId, respCode, respMsg, settleAmt, settleCurrencyCode, settleDate, traceNo, traceTime, exchangeDate, exchangeRate, accNo, payCardType, payType, payCardNo, payCardIssueName, bindId);
              String privateKey= "";
-             privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
+             if(orderinfo.getSecmemberno().startsWith("3")){
+            	 privateKey = coopInstiService.getCoopInstiMK(orderinfo.getFirmemberno(), TerminalAccessType.OPENAPI).getZplatformPriKey();
+             }else if(orderinfo.getSecmemberno().startsWith("2")){
+            	 privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
+             }
              resultBean = new ResultBean(generateAsyncOrderResult(orderRespBean, privateKey.trim()));
         } catch (Exception e) {
             // TODO Auto-generated catch block
