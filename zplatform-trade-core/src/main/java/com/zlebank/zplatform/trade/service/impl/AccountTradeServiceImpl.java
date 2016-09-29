@@ -153,7 +153,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			throw new CommonException(AccTradeExcepitonEnum.TE02.getErrorCode());//交易类型有误
 		}
 		//转账业务
-		if(!busiModel.getBusitype().equals(BusiType.TRANSFER.getCode())){
+		if(!busiModel.getBusicode().equals(BusinessEnum.TRANSFER.getBusiCode())){
 			throw new CommonException(AccTradeExcepitonEnum.TE03.getErrorCode());//只有转账业务才能处理
 		}
 		//判断双方会员的基本账户状态是否正常 
