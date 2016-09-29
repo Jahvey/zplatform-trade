@@ -15,10 +15,11 @@ import com.zlebank.zplatform.trade.bean.gateway.ExtractOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.RefundOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
+import com.zlebank.zplatform.trade.bean.industry.IndustryPayOrderBean;
 import com.zlebank.zplatform.trade.exception.TradeException;
 
 /**
- * 行业账户交易处理类，处理行业转账，行业提取，行业退款三个业务
+ * 行业账户交易处理类，处理行业转账，行业提取，行业退款，行业支付（消费，充值）业务
  *
  * @author guojia
  * @version
@@ -27,6 +28,13 @@ import com.zlebank.zplatform.trade.exception.TradeException;
  */
 public interface IndustryAccountTradeService {
 
+	/**
+	 * 创建行业专户支付类订单
+	 * @param orderBean 支付订单bean
+	 * @return tn 受理订单号
+	 * @throws TradeException
+	 */
+	public String createIndustryPayOrder(IndustryPayOrderBean orderBean) throws TradeException;
 	/**
 	 * 行业专户转账
 	 * @param industryCode 行业代码

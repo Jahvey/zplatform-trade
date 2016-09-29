@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
+import com.zlebank.zplatform.member.bean.InduGroupMemberBean;
 import com.zlebank.zplatform.member.bean.MemberAccountBean;
 import com.zlebank.zplatform.member.bean.MemberBean;
 import com.zlebank.zplatform.member.bean.enums.MemberType;
@@ -31,6 +32,7 @@ import com.zlebank.zplatform.member.exception.GetAccountFailedException;
 import com.zlebank.zplatform.member.pojo.PojoMember;
 import com.zlebank.zplatform.member.pojo.PojoMerchDeta;
 import com.zlebank.zplatform.member.service.CoopInstiService;
+import com.zlebank.zplatform.member.service.IndustryGroupMemberService;
 import com.zlebank.zplatform.member.service.MemberAccountService;
 import com.zlebank.zplatform.member.service.MemberService;
 import com.zlebank.zplatform.member.service.MerchService;
@@ -41,6 +43,7 @@ import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
 import com.zlebank.zplatform.trade.bean.gateway.ExtractOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.RefundOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
+import com.zlebank.zplatform.trade.bean.industry.IndustryPayOrderBean;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
@@ -87,6 +90,198 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 	private ITxnsLogService txnsLogService;
 	@Autowired
 	private ITxnsRefundService txnsRefundService;
+	@Autowired
+	private IndustryGroupMemberService industryGroupMemberService;
+	
+	
+	public String createIndustryPayOrder(IndustryPayOrderBean orderBean) throws TradeException{
+		/**
+		 * 1.对转账订单进行数据校验，未通过拒绝交易，并返回错误信息，
+		 * 2.订单唯一性检查
+		 * 3.订单对外业务代码转换为内部业务代码
+		 * 4.行业专户业务检查,非行业专户消费业务，拒绝交易
+		 * 5.检查付款方和收款方是否在同一行业内，不在同一行业内拒绝交易,(暂无)
+		 * 6
+		 * 7.赋值交易订单数据和交易流水数据
+		 * 8.账务处理
+		 * 9.根据账务处理结果处理交易数据
+		 * 10.保存订单数据和交易流水数据
+		 */
+		ResultBean resultBean = ValidateLocator.validateBeans(orderBean);
+        if(!resultBean.isResultBool()){
+        	 throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        
+        TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderinfoByOrderNoAndMemberId(orderBean.getOrderId(),orderBean.getMerchId());
+        if(orderinfo!=null){
+        	 throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        TxncodeDefModel busiModel = txncodeDefService.getBusiCode(orderBean.getTxnType(), orderBean.getTxnSubType(), orderBean.getBizType());
+        BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
+        if(businessEnum!=BusinessEnum.CONSUME_INDUSTRY && businessEnum!=BusinessEnum.CHARGE_INDUSTRY){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        
+        
+        InduGroupMemberBean groupMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getMemberId(), orderBean.getGroupCode());
+        if(groupMember==null){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        InduGroupMemberBean groupMerch = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getMerchId(), orderBean.getGroupCode());
+        if(groupMerch==null){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        if(businessEnum==BusinessEnum.CONSUME_INDUSTRY){
+        	try {
+    			MemberBean member = new MemberBean();
+    			member.setMemberId(groupMember.getUniqueTag());
+    			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+    			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+    			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
+    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			}
+    		} catch (DataCheckFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		} catch (GetAccountFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		}
+            try {
+    			MemberBean member = new MemberBean();
+    			member.setMemberId(groupMerch.getUniqueTag());
+    			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+    			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+    			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
+    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			}
+    		} catch (DataCheckFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		} catch (GetAccountFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		}
+        }else if(businessEnum==BusinessEnum.CHARGE_INDUSTRY){
+        	try {
+    			MemberBean member = new MemberBean();
+    			member.setMemberId(groupMember.getUniqueTag());
+    			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+    			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+    			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
+    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			}
+    		} catch (DataCheckFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		} catch (GetAccountFailedException e) {
+    			// TODO Auto-generated catch block
+    			e.printStackTrace();
+    			logger.error(e.getMessage());
+    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    		}
+        }
+        
+        
+        
+        String tn = OrderNumber.getInstance().generateTN(orderBean.getMerchId());
+        String txnseqno = OrderNumber.getInstance().generateTxnseqno(businessEnum.getBusiCode());
+        
+        TxnsLogModel txnsLog = new TxnsLogModel();
+		//获取付款人的信息
+		//如果是企业会员
+        PojoMember pojoMember = memberService.getMbmberByMemberId(orderBean.getMerchId(), null);
+		MemberType type= pojoMember.getMemberType();
+		if(type.equals(MemberType.ENTERPRISE)){
+			PojoMerchDeta member = merchService.getMerchBymemberId(orderBean.getMerchId());
+			txnsLog.setRiskver(member.getRiskVer());
+			txnsLog.setSplitver(member.getSpiltVer());
+			txnsLog.setFeever(member.getFeeVer());
+			txnsLog.setPrdtver(member.getPrdtVer());
+			txnsLog.setRoutver(member.getRoutVer());
+			txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
+					.valueOf(member.getSetlCycle().toString())));
+		//如果是普通会员
+		}else{
+			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
+			txnsLog.setRiskver(txnsLogService.getDefaultVerInfo(orderBean.getCoopInst(),
+					busiModel.getBusicode(), 13));
+			txnsLog.setSplitver(txnsLogService.getDefaultVerInfo(orderBean.getCoopInst(),
+					busiModel.getBusicode(), 12));
+			txnsLog.setFeever(txnsLogService.getDefaultVerInfo(orderBean.getCoopInst(),
+					busiModel.getBusicode(), 11));
+			txnsLog.setPrdtver(txnsLogService.getDefaultVerInfo(orderBean.getCoopInst(),
+					busiModel.getBusicode(), 10));
+			txnsLog.setRoutver(txnsLogService.getDefaultVerInfo(orderBean.getCoopInst(),
+					busiModel.getBusicode(), 20));
+		}
+		
+		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
+		txnsLog.setTxndate(DateUtil.getCurrentDate());
+		txnsLog.setTxntime(DateUtil.getCurrentTime());
+		txnsLog.setBusicode(busiModel.getBusicode());
+		//5000-转账
+		txnsLog.setBusitype(busiModel.getBusitype());
+		// 核心交易流水号，交易时间（yymmdd）+业务代码+6位流水号（每日从0开始）
+		txnsLog.setTxnseqno(OrderNumber.getInstance().generateTxnseqno(
+				txnsLog.getBusicode()));
+		txnsLog.setAmount(Long.valueOf(orderBean.getTxnAmt()));
+		txnsLog.setAccordno(orderBean.getOrderId());
+		txnsLog.setAccfirmerno(orderBean.getCoopInst());
+		txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
+		//付款方
+		txnsLog.setAccsecmerno(orderBean.getMerchId());
+		txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
+		txnsLog.setTradestatflag(TradeStatFlagEnum.INITIAL.getStatus());// 交易初始状态
+		txnsLog.setAccmemberid(orderBean.getMemberId());
+		//佣金
+		txnsLog.setTradcomm(0L);
+		txnsLog.setGroupcode(orderBean.getGroupCode());
+		//计算手续费
+		txnsLog.setTxnfee(txnsLogService.getTxnFee(txnsLog));
+        orderinfo = new TxnsOrderinfoModel();
+		orderinfo.setId(1L);
+		orderinfo.setOrderno(orderBean.getOrderId());// 商户提交的订单号
+		orderinfo.setOrderamt(Long.valueOf(orderBean.getTxnAmt()));
+		orderinfo.setOrderfee(txnsLog.getTxnfee());
+		orderinfo.setOrdercommitime(orderBean.getTxnTime());
+		orderinfo.setRelatetradetxn(txnseqno);// 关联的交易流水表中的交易序列号
+		//合作机构
+		orderinfo.setFirmemberno(orderBean.getCoopInst());
+		orderinfo.setFirmembername(coopInstiService.getInstiByInstiCode(orderBean.getCoopInst()).getInstiName());
+		//二级商户
+		orderinfo.setSecmemberno(orderBean.getMerchId());
+		orderinfo.setSecmembername(pojoMember.getMemberName());
+		orderinfo.setFronturl(orderBean.getFrontUrl());
+		orderinfo.setBackurl(orderBean.getBackUrl());
+		orderinfo.setTxntype(orderBean.getTxnType());
+		orderinfo.setTxnsubtype(orderBean.getTxnSubType());
+		orderinfo.setBiztype(orderBean.getBizType());
+		orderinfo.setOrderdesc(orderBean.getOrderDesc());
+		orderinfo.setPaytimeout(orderBean.getPayTimeout());
+		orderinfo.setTn(tn);
+		orderinfo.setMemberid(orderBean.getMemberId());
+		orderinfo.setCurrencycode("156");
+		orderinfo.setPayerip(orderBean.getCustomerIp());
+		orderinfo.setGroupcode(orderBean.getGroupCode());
+		
+		
+		txnsOrderinfoDAO.saveOrderInfo(orderinfo);
+		txnsLogService.saveTxnsLog(txnsLog);
+		return tn;
+	}
+	
+	
 	/**
 	 *
 	 * @param orderBean
@@ -95,7 +290,7 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 	 */
 	@Override
 	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
-	public ResultBean transferIndustry(String industryCode,TransferOrderBean orderBean) throws TradeException {
+	public ResultBean transferIndustry(String groupCode,TransferOrderBean orderBean) throws TradeException {
 		/**
 		 * 1.对转账订单进行数据校验，未通过拒绝交易，并返回错误信息，
 		 * 2.订单唯一性检查
@@ -120,15 +315,60 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
         }
         TxncodeDefModel busiModel = txncodeDefService.getBusiCode(orderBean.getTxnType(), orderBean.getTxnSubType(), orderBean.getBizType());
         BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
-        
-        
         if(businessEnum!=BusinessEnum.TRANSFER_INDUSTRY){
         	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
         }
         
-        
-        //缺少行业判断
 		
+        InduGroupMemberBean groupPayMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getFromMerId(), groupCode);
+        if(groupPayMember==null){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        InduGroupMemberBean groupPayToMember= industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getToMerId(), groupCode);
+        if(groupPayToMember==null){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        try {
+			MemberBean member = new MemberBean();
+			member.setMemberId(groupPayMember.getUniqueTag());
+			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
+				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			}
+			if(fromMemberAccount.getBalance().longValue()<Long.valueOf(orderBean.getTxnAmt())){
+				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			}
+		} catch (DataCheckFailedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+		} catch (GetAccountFailedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+		}
+        try {
+			MemberBean member = new MemberBean();
+			member.setMemberId(groupPayToMember.getUniqueTag());
+			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
+				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			}
+		} catch (DataCheckFailedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+		} catch (GetAccountFailedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+		}
         
         
         try {
@@ -283,7 +523,7 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 	 * @return
 	 */
 	@Override
-	public ResultBean extractIndustry(String industryCode,ExtractOrderBean orderBean) throws TradeException{
+	public ResultBean extractIndustry(String groupCode,ExtractOrderBean orderBean) throws TradeException{
 
 		/**
 		 * 1.对转账订单进行数据校验，未通过拒绝交易，并返回错误信息，
@@ -316,16 +556,23 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
         }
         
         
-        //缺少行业判断
-		
+        
+        InduGroupMemberBean extractMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getMerId(), groupCode);
+        if(extractMember==null){
+        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        }
+        
         
         
         try {
 			MemberBean member = new MemberBean();
-			member.setMemberId(orderBean.getMerId());
-			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
-			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
+			member.setMemberId(extractMember.getUniqueTag());
+			MemberAccountBean extractMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+			AcctStatusType acctStatusType = AcctStatusType.fromValue(extractMemberAccount.getStatus());
 			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
+				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			}
+			if(extractMemberAccount.getBalance().longValue()<Long.valueOf(orderBean.getTxnAmt())){//行业专户余额小于提取余额
 				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
 			}
 		} catch (DataCheckFailedException e) {
@@ -692,7 +939,7 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 		refundOrder.setStatus("01");
 		refundOrder.setRelorderno(orderBean.getOrderId());
 		txnsRefundService.saveRefundOrder(refundOrder);
-		return null;
+		return tn;
 	}
 
 	

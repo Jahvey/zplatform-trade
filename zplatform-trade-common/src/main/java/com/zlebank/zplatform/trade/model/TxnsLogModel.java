@@ -80,6 +80,8 @@ public class TxnsLogModel implements java.io.Serializable {
     private String acccoopinstino;
     private String panName;
     private String productcode;
+    private String groupcode;
+    
     // Constructors
 
     /** default constructor */
@@ -753,6 +755,21 @@ public class TxnsLogModel implements java.io.Serializable {
 	 */
 	public void setProductcode(String productcode) {
 		this.productcode = productcode;
+	}
+
+	/**
+	 * @return the groupcode
+	 */
+	@Column(name = "GROUPCODE")
+	public String getGroupcode() {
+		return groupcode;
+	}
+
+	/**
+	 * @param groupcode the groupcode to set
+	 */
+	public void setGroupcode(String groupcode) {
+		this.groupcode = groupcode;
 	}
 	
     
