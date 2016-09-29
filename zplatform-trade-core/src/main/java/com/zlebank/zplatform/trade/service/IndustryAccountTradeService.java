@@ -11,7 +11,9 @@
 package com.zlebank.zplatform.trade.service;
 
 import com.zlebank.zplatform.trade.bean.ResultBean;
+import com.zlebank.zplatform.trade.bean.gateway.ExtractOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderBean;
+import com.zlebank.zplatform.trade.bean.gateway.RefundOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
 import com.zlebank.zplatform.trade.exception.TradeException;
 
@@ -39,14 +41,16 @@ public interface IndustryAccountTradeService {
 	 * @param industryCode 行业代码
 	 * @param orderBean 提取订单信息
 	 * @return ResultBean 返回交易结果（错误信息）和受理订单号
+	 * @throws TradeException
 	 */
-	public ResultBean extractIndustry(final String industryCode,OrderBean orderBean);
+	public ResultBean extractIndustry(final String industryCode,ExtractOrderBean orderBean) throws TradeException;
 	
 	/**
 	 * 行业专户退款-退款订单的创建和初审申请
 	 * @param industryCode 行业代码
 	 * @param orderBean 退款订单信息
 	 * @return tn 受理订单号
+	 * @throws TradeException
 	 */
-	public String refundIndustry(final String industryCode,OrderBean orderBean);
+	public String refundIndustry(final String industryCode,RefundOrderBean orderBean) throws TradeException;
 }
