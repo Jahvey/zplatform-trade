@@ -13,6 +13,8 @@ package com.zlebank.zplatform.trade.service.impl;
 import java.util.Calendar;
 import java.util.Date;
 
+import oracle.net.aso.e;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,28 +111,25 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 		 */
 		ResultBean resultBean = ValidateLocator.validateBeans(orderBean);
         if(!resultBean.isResultBool()){
-        	 throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	 throw new TradeException("T000",resultBean.getErrMsg());
         }
         
         TxnsOrderinfoModel orderinfo = txnsOrderinfoDAO.getOrderinfoByOrderNoAndMemberId(orderBean.getOrderId(),orderBean.getMerchId());
         if(orderinfo!=null){
-        	 throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	 throw new TradeException("T000","订单已存在，请不要重复提交");
         }
         TxncodeDefModel busiModel = txncodeDefService.getBusiCode(orderBean.getTxnType(), orderBean.getTxnSubType(), orderBean.getBizType());
         BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
         if(businessEnum!=BusinessEnum.CONSUME_INDUSTRY && businessEnum!=BusinessEnum.CHARGE_INDUSTRY){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000","业务类型错误");
         }
         
         
         InduGroupMemberBean groupMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getMemberId(), orderBean.getGroupCode());
         if(groupMember==null){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000","会员未加入行业群组");
         }
-        InduGroupMemberBean groupMerch = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getMerchId(), orderBean.getGroupCode());
-        if(groupMerch==null){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-        }
+        
         if(businessEnum==BusinessEnum.CONSUME_INDUSTRY){
         	try {
     			MemberBean member = new MemberBean();
@@ -138,37 +137,37 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
     			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
     			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
     			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
-    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    				throw new TradeException("T000","会员行业专户状态异常");
     			}
     		} catch (DataCheckFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		} catch (GetAccountFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		}
             try {
     			MemberBean member = new MemberBean();
-    			member.setMemberId(groupMerch.getUniqueTag());
-    			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
+    			member.setMemberId(orderBean.getMerchId());
+    			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.WAITSETTLE);
     			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
     			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
-    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    				throw new TradeException("T000","商户账户状态异常");
     			}
     		} catch (DataCheckFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		} catch (GetAccountFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		}
         }else if(businessEnum==BusinessEnum.CHARGE_INDUSTRY){
         	try {
@@ -177,18 +176,18 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
     			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
     			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
     			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
-    				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    				throw new TradeException("T000","会员行业专户状态异常");
     			}
     		} catch (DataCheckFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		} catch (GetAccountFailedException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
     			logger.error(e.getMessage());
-    			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+    			throw new TradeException("T000",e.getMessage());
     		}
         }
         
@@ -239,8 +238,10 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 		txnsLog.setAccordno(orderBean.getOrderId());
 		txnsLog.setAccfirmerno(orderBean.getCoopInst());
 		txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
-		//付款方
-		txnsLog.setAccsecmerno(orderBean.getMerchId());
+		
+		if(businessEnum==BusinessEnum.CONSUME_INDUSTRY){
+			txnsLog.setAccsecmerno(orderBean.getMerchId());
+		}
 		txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
 		txnsLog.setTradestatflag(TradeStatFlagEnum.INITIAL.getStatus());// 交易初始状态
 		txnsLog.setAccmemberid(orderBean.getMemberId());
@@ -274,7 +275,7 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 		orderinfo.setCurrencycode("156");
 		orderinfo.setPayerip(orderBean.getCustomerIp());
 		orderinfo.setGroupcode(orderBean.getGroupCode());
-		
+		orderinfo.setStatus("01");
 		
 		txnsOrderinfoDAO.saveOrderInfo(orderinfo);
 		txnsLogService.saveTxnsLog(txnsLog);
@@ -305,7 +306,7 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 		 */
 		ResultBean resultBean = ValidateLocator.validateBeans(orderBean);
         if(!resultBean.isResultBool()){
-        	 throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000",resultBean.getErrMsg());
         }
         
         
@@ -316,17 +317,17 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
         TxncodeDefModel busiModel = txncodeDefService.getBusiCode(orderBean.getTxnType(), orderBean.getTxnSubType(), orderBean.getBizType());
         BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
         if(businessEnum!=BusinessEnum.TRANSFER_INDUSTRY){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000","订单已存在，请不要重复提交");
         }
         
 		
         InduGroupMemberBean groupPayMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getFromMerId(), groupCode);
         if(groupPayMember==null){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000","付款会员未加入行业群组");
         }
         InduGroupMemberBean groupPayToMember= industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(orderBean.getToMerId(), groupCode);
         if(groupPayToMember==null){
-        	throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	throw new TradeException("T000","收款会员未加入行业群组");
         }
         try {
 			MemberBean member = new MemberBean();
@@ -334,21 +335,21 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
 			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
 			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
-				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+				throw new TradeException("T000","付款会员专户状态异常");
 			}
 			if(fromMemberAccount.getBalance().longValue()<Long.valueOf(orderBean.getTxnAmt())){
-				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+				throw new TradeException("T000","付款会员余额不足");
 			}
 		} catch (DataCheckFailedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			throw new TradeException("T000",e.getMessage());
 		} catch (GetAccountFailedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			throw new TradeException("T000",e.getMessage());
 		}
         try {
 			MemberBean member = new MemberBean();
@@ -356,60 +357,19 @@ public class IndustryAccountTradeServiceImpl implements IndustryAccountTradeServ
 			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
 			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
 			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
-				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+				throw new TradeException("T000","收款会员账户状态异常");
 			}
 		} catch (DataCheckFailedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			throw new TradeException("T000",e.getMessage());
 		} catch (GetAccountFailedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
+			throw new TradeException("T000",e.getMessage());
 		}
-        
-        
-        try {
-			MemberBean member = new MemberBean();
-			member.setMemberId(orderBean.getFromMerId());
-			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
-			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
-			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_OUT){
-				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-			}
-		} catch (DataCheckFailedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-		} catch (GetAccountFailedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-		}
-        try {
-			MemberBean member = new MemberBean();
-			member.setMemberId(orderBean.getToMerId());
-			MemberAccountBean fromMemberAccount = memberAccountService.queryBalance(null, member, Usage.BASICPAY);
-			AcctStatusType acctStatusType = AcctStatusType.fromValue(fromMemberAccount.getStatus());
-			if(acctStatusType==AcctStatusType.FREEZE||acctStatusType==AcctStatusType.STOP_IN){
-				throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-			}
-		} catch (DataCheckFailedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-		} catch (GetAccountFailedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.error(e.getMessage());
-			throw new TradeException(AccTradeExcepitonEnum.TE00.getErrorCode());
-		}
-        
         
         String tn = OrderNumber.getInstance().generateTN(orderBean.getFromMerId());
         String txnseqno = OrderNumber.getInstance().generateTxnseqno(businessEnum.getBusiCode());

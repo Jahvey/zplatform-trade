@@ -51,7 +51,7 @@ public enum BusinessEnum {
     
     
     CONSUME_INDUSTRY("10000005"),//消费行业
-    CHARGE_INDUSTRY("20000003"),//充值-行业
+    CHARGE_INDUSTRY("20000005"),//充值-行业
     TRANSFER_INDUSTRY("50000003"),//转账-行业
     EXTRACT_INDUSTRY("50000004"),//提取-行业
     REFUND_INDUSTRY("40000003"),//退款-行业

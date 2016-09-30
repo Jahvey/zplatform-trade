@@ -55,7 +55,7 @@ public class IndustryPayOrderBean implements Serializable {
 	@Length(max = 14, message = "param.error.txnTime")
 	private String txnTime;// 订单发送时间
 	@NotEmpty(message = "param.empty.orderTimeout")
-	@Length(max = 10, message = "param.error.orderTimeout")
+	@Length(max = 14, message = "param.error.orderTimeout")
 	private String payTimeout;// 支付超时时间
 	@NotEmpty(message = "param.empty.txnAmt")
 	@Length(max = 12, message = "param.error.txnAmt")
