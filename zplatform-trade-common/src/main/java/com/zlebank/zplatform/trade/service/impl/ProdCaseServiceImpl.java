@@ -96,8 +96,8 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
             }
         }*/
         BusiTypeEnum busiTypeEnum = BusiTypeEnum.fromValue(busiModel.getBusitype());
+        BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
         if(busiTypeEnum==BusiTypeEnum.consumption){//消费
-        	BusinessEnum businessEnum = BusinessEnum.fromValue(busiModel.getBusicode());
         	if(StringUtil.isEmpty(order.getMerId())){
         		 //throw new CommonException("GW26", "商户号为空");
         		 resultBean = new ResultBean("GW26", "商户号为空");
@@ -123,12 +123,28 @@ public class ProdCaseServiceImpl extends BaseServiceImpl<ProdCaseModel, Long> im
 					//throw new CommonException("", "产品不存在");
 					resultBean = new ResultBean("T000", "产品不存在");
 				}
+            }else if(BusinessEnum.CONSUME_INDUSTRY==businessEnum){//行业专户消费业务
+            	/**
+            	 * 1.取得行业代码和会员号，检查会员是否在此行业中开设了专户，没有时抛出异常，拒绝交易
+            	 * 2.检查行业专户的账户状态，消费业务时不能是止出和冻结状态，如果发现是此状态，抛出异常拒绝此交易
+            	 * 3.因为行业账户消费只使用余额进行消费，这里会检查账户余额，比较余额和消费金额，余额不足时返回异常拒绝交易-
+            	 */
             }
+            
+            
+            
             resultBean = new ResultBean("success");
         }else if(busiTypeEnum==BusiTypeEnum.charge){//充值
         	/*if (StringUtil.isEmpty(order.getMemberId()) || "999999999999999".equals(order.getMemberId())) {
 				throw new CommonException("GW19", "会员不存在无法进行充值");
 			}*/
+        	if(BusinessEnum.CHARGE_INDUSTRY==businessEnum){//行业充值
+        		/**
+        		 * 1.取得行业代码和会员号，检查会员是否在此行业中开设了专户，没有时抛出异常，拒绝交易
+        		 * 2.检查行业专户的账户状态，消费业务时不能是止入和冻结状态，如果发现是此状态，抛出异常拒绝此交易
+        		 */
+        	}
+        	
         	resultBean = new ResultBean("success");
         }else if(busiTypeEnum==BusiTypeEnum.withdrawal){//提现
         	/*if (StringUtil.isEmpty(orderBean.getMemberId()) || "999999999999999".equals(orderBean.getMemberId())) {

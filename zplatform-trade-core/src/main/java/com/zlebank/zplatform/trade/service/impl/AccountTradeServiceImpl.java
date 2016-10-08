@@ -128,10 +128,10 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	@Transactional
 	public String transfer(TransferOrderBean order) throws CommonException {
 		 log.info("转账处理开始");
-         log.info(JSONObject.fromObject(order));
+         //log.info(JSONObject.fromObject(order));
          ResultBean resultBean = ValidateLocator.validateBeans(order);
          if(!resultBean.isResultBool()){
-        	 throw  new CommonException(AccTradeExcepitonEnum.TE00.getErrorCode());
+        	 throw new CommonException(AccTradeExcepitonEnum.TE00.getErrorCode());
          }
          CurrencyEnum  rmb = CurrencyEnum.fromValue(order.getCurrencyCode());
          if(rmb==null || rmb.equals(CurrencyEnum.UNKNOW)){
