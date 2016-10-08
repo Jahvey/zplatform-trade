@@ -268,9 +268,15 @@ public class InsteadPayController {
        for (InsteadPayFile file : requestBean.getFileContent()) {
            if (StringUtil.isEmpty(file.getBankCode())) {
         	   //如查银行卡号没有，则通过银行卡号获取联行号
-        	   String bankNumber = routeConfigService.getCardPBCCode(file.getAccNo()).get("PBC_BANKCODE")+"";
-        	   file.setBankCode(bankNumber);
-               //file.setBankCode("000000000000");
+        	   Map<String,Object> map =routeConfigService.getCardPBCCode(file.getAccNo());
+        	   if(map==null || map.get("PBC_BANKCODE")==null){
+        		   errorMsgDetail.append(file.getBankCode()+"查询不到联行号");
+        	   }else{
+        		   String bankNumber = map.get("PBC_BANKCODE")+"";
+            	   file.setBankCode(bankNumber);
+                   //file.setBankCode("000000000000");
+        	   }
+        	  
            }
            // 校验报文bean数据
            String error = HibernateValidatorUtil.validateBeans(file);

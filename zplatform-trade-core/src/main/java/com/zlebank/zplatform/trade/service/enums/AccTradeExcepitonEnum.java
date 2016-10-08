@@ -20,7 +20,7 @@ package com.zlebank.zplatform.trade.service.enums;
  * @since 
  */
 public enum AccTradeExcepitonEnum {
-
+	UNKNOWN("UNKNOWN","未知"),
 	
 	AQ00("AQ00","字段校验非法"),
 	AQ01("AQ01","查询余额失败"),
@@ -59,7 +59,7 @@ public enum AccTradeExcepitonEnum {
 	BW09("BW09","订单保存失败"),
 	
 	
-	
+	CURRENCY("CURRENCY","未找到此币钟"),
 	GW03("GW03","获取商户版本信息错误");
 	;
 
