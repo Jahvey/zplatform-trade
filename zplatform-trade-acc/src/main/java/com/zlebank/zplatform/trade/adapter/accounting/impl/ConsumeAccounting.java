@@ -338,7 +338,7 @@ public class ConsumeAccounting implements IAccounting{
             
             tradeInfo.setCoopInstCode(coopInstCode);
             tradeInfo.setAccess_coopInstCode(access_coopInstCode);
-            tradeInfo.setIndustry_group(txnsLog.getGroupcode());
+            tradeInfo.setIndustry_group_member_tag(txnsLog.getGroupcode());
             /*tradeInfo.setPayordno(payordno);
             tradeInfo.setTxnseqno(txnseqno);
             tradeInfo.setAmount(amount);;

@@ -241,7 +241,7 @@ public class ChargeAccounting implements IAccounting {
 			tradeInfo.setPayordno(payordno);
 			tradeInfo.setCoopInstCode(coopInstCode);
             tradeInfo.setAccess_coopInstCode(access_coopInstCode);
-            tradeInfo.setIndustry_group(txnsLog.getGroupcode());
+            tradeInfo.setIndustry_group_member_tag(txnsLog.getGroupcode());
 			log.info(JSON.toJSONString(tradeInfo));
 			try {
 				accEntryService.accEntryProcess(tradeInfo,
