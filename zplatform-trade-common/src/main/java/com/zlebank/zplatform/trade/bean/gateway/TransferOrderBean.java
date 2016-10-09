@@ -48,7 +48,9 @@ public class TransferOrderBean implements Serializable {
 	private String backUrl = "";
 	@Length(max = 40, message = "param.error.customerIp")
 	private String customerIp = "";
-
+	@NotEmpty(message = "param.empty.payPassword")
+	@Length(max = 6, message = "param.error.payPassword")
+	private String payPassword="";
 	public String getCustomerIp() {
 		return customerIp;
 	}
@@ -169,4 +171,12 @@ public class TransferOrderBean implements Serializable {
 		this.txnTime = txnTime;
 	}
 
+	public String getPayPassword() {
+		return payPassword;
+	}
+
+	public void setPayPassword(String payPassword) {
+		this.payPassword = payPassword;
+	}
+	
 }

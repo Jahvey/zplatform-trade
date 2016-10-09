@@ -341,9 +341,12 @@ public class TradeNotifyServiceImpl implements TradeNotifyService{
              OrderAsynRespBean orderRespBean = new OrderAsynRespBean(version, encoding, certId, signature, signMethod, merId, orderId, txnType, txnSubType, bizType, accessType, txnTime, txnAmt, currencyCode, reqReserved, reserved, queryId, respCode, respMsg, settleAmt, settleCurrencyCode, settleDate, traceNo, traceTime, exchangeDate, exchangeRate, accNo, payCardType, payType, payCardNo, payCardIssueName, bindId);
              String privateKey= "";
              if(orderinfo.getSecmemberno().startsWith("3")){
-            	 privateKey = coopInstiService.getCoopInstiMK(orderinfo.getFirmemberno(), TerminalAccessType.OPENAPI).getZplatformPriKey();
+            	 privateKey = coopInstiService.getCoopInstiMK(orderinfo.getSecmemberno(), TerminalAccessType.OPENAPI).getZplatformPriKey();
              }else if(orderinfo.getSecmemberno().startsWith("2")){
             	 privateKey = merchMKService.get(orderinfo.getSecmemberno()).getLocalPriKey().trim();
+             }
+             if(StringUtil.isEmpty(privateKey)){
+            	 privateKey = merchMKService.get(orderinfo.getFirmemberno()).getLocalPriKey().trim();
              }
              resultBean = new ResultBean(generateAsyncOrderResult(orderRespBean, privateKey.trim()));
         } catch (Exception e) {
