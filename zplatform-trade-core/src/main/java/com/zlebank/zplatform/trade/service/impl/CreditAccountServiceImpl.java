@@ -183,7 +183,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		if(StringUtil.isNotEmpty(order.getMerId())){
 			member = merchService.getMerchBymemberId(order.getMerId());
 		}
-		if(member ==null){
+		if(member != null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -388,7 +388,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		if(StringUtil.isNotEmpty(order.getMerId())){
 			member = merchService.getMerchBymemberId(order.getMerId());
 		}
-		if(member ==null){
+		if(member != null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -593,7 +593,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		if(StringUtil.isNotEmpty(order.getMerId())){
 			merInfo = merchService.getMerchBymemberId(order.getMerId());
 		}
-		if(merInfo ==null){
+		if(merInfo != null){
 			txnsLog.setRiskver(merInfo.getRiskVer());
 			txnsLog.setSplitver(merInfo.getSpiltVer());
 			txnsLog.setFeever(merInfo.getFeeVer());

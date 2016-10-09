@@ -171,8 +171,8 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		if(StringUtil.isEmpty(payPwd)){
 			throw new CommonException(AccTradeExcepitonEnum.PAYPWD_EMPTY.getErrorCode());
 		}
-		String requestPayPwd = Md5.getInstance().md5s(payPwd);
-        if (! requestPayPwd.equals(fromMember.getPayPwd())) {
+		String requestPayPwd = Md5.getInstance().md5s(order.getPayPassword());
+        if (! requestPayPwd.equals(payPwd)) {
         	throw new CommonException(AccTradeExcepitonEnum.PAYPWD_ERROR.getErrorCode());
         }
 		PojoMember toMember =this.getMemberInfo(order.getToMerId());
@@ -198,7 +198,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		//获取付款人的信息
 		//如果是企业会员
 		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
-		if(member==null){
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -378,7 +378,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//获取付款人的信息
 		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
-		if(member==null){
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -575,8 +575,8 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		if(StringUtil.isEmpty(payPwd)){
 			throw new CommonException(AccTradeExcepitonEnum.PAYPWD_EMPTY.getErrorCode());
 		}
-		String requestPayPwd = Md5.getInstance().md5s(payPwd);
-        if (! requestPayPwd.equals(fromMember.getPayPwd())) {
+		String requestPayPwd = Md5.getInstance().md5s(order.getPayPassword());
+        if (! requestPayPwd.equals(payPwd)) {
         	throw new CommonException(AccTradeExcepitonEnum.PAYPWD_ERROR.getErrorCode());
         }
 		//检查基本账户
@@ -600,7 +600,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		//获取付款人的信息
 		//如果是企业会员
 		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
-		if(member==null){
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
