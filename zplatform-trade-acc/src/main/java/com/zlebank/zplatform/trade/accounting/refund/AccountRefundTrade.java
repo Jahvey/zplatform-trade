@@ -26,6 +26,7 @@ import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.entry.EntryEvent;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
 import com.zlebank.zplatform.commons.utils.StringUtil;
+import com.zlebank.zplatform.member.service.IndustryGroupMemberService;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.ChargeAccounting;
 import com.zlebank.zplatform.trade.adapter.quickpay.IRefundTrade;
 import com.zlebank.zplatform.trade.bean.ResultBean;
@@ -37,6 +38,7 @@ import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.model.TxnsRefundModel;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.ITxnsRefundService;
+import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
 import com.zlebank.zplatform.trade.utils.SpringContext;
@@ -57,7 +59,7 @@ public class AccountRefundTrade implements IRefundTrade {
 	private ITxnsRefundService txnsRefundService;
 	private ITxnsLogService txnsLogService;
 	private ITxnsOrderinfoDAO txnsOrderinfoDAO;
-
+	private IndustryGroupMemberService industryGroupMemberService = (IndustryGroupMemberService)SpringContext.getContext().getBean("industryGroupMemberServiceImpl");
 	public AccountRefundTrade() {
 		accEntryService = (AccEntryService) SpringContext.getContext().getBean(
 				"accEntryServiceImpl");
@@ -82,71 +84,143 @@ public class AccountRefundTrade implements IRefundTrade {
 		ResultBean resultBean = null;
 		TxnsLogModel txnsLog = txnsLogService.getTxnsLogByTxnseqno(tradeBean.getTxnseqno());
 		TxnsOrderinfoModel order = txnsOrderinfoDAO.getOrderByTxnseqno(tradeBean.getTxnseqno());
-		//记录退款的流水
-		String payordno = updateRefund(tradeBean.getTxnseqno(),txnsLog.getAccmemberid());
-		/**支付订单号**/
-        
-        /**交易类型**/
-        String busiCode = BusinessEnum.REFUND_ACCOUNT.getBusiCode();
-        /**付款方会员ID**/
-        String payMemberId =  txnsLog.getAccmemberid();
-        /**收款方会员ID**/
-        String payToMemberId = txnsLog.getAccsecmerno();
-        /**收款方父级会员ID**/
-        String payToParentMemberId="" ;
-        /**渠道**/
-        String channelId = "99999999";//支付机构代码
-        /**产品id**/
-        String productId = "";
-        /**交易金额**/
-        BigDecimal amount = new BigDecimal(txnsLog.getAmount());
-        /**佣金**/
-        BigDecimal commission = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTradcomm()+"")?txnsLog.getTradcomm():0);
-        /**手续费**/
-        BigDecimal charge = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTxnfee()+"")?txnsLog.getTxnfee():0L);
-        /**金额D**/
-        BigDecimal amountD = new BigDecimal(0);
-        /**金额E**/
-        BigDecimal amountE = new BigDecimal(0);
-        
-        TradeInfo tradeInfo = new TradeInfo(txnsLog.getTxnseqno(), payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
-        tradeInfo.setCoopInstCode(txnsLog.getAccfirmerno());
-        
-        log.info(JSON.toJSONString(tradeInfo));
-        try {
-			accEntryService.accEntryProcess(tradeInfo,EntryEvent.AUDIT_PASS);
-			resultBean = new ResultBean("success");
-		}  catch (AccBussinessException e) {
-            resultBean = new ResultBean(e.getCode(), e.getMessage());
-            e.printStackTrace();
-        } catch (AbstractBusiAcctException e) {
-            resultBean = new ResultBean(e.getCode(), e.getMessage());
-            e.printStackTrace();
-        } catch (NumberFormatException e) {
-            resultBean = new ResultBean("T099", e.getMessage());
-            e.printStackTrace();
-        } catch (IllegalEntryRequestException e) {
-			// TODO Auto-generated catch block
-        	resultBean = new ResultBean(e.getCode(), e.getMessage());
-			e.printStackTrace();
+		BusinessEnum businessEnum = BusinessEnum.fromValue(txnsLog.getBusicode());
+		if(businessEnum == BusinessEnum.REFUND_ACCOUNT){
+			//记录退款的流水
+			String payordno = updateRefund(tradeBean.getTxnseqno(),txnsLog.getAccmemberid());
+			/**支付订单号**/
+	        
+	        /**交易类型**/
+	        String busiCode = txnsLog.getBusicode();
+	        /**付款方会员ID**/
+	        String payMemberId =  txnsLog.getAccmemberid();
+	        /**收款方会员ID**/
+	        String payToMemberId = txnsLog.getAccsecmerno();
+	        /**收款方父级会员ID**/
+	        String payToParentMemberId="" ;
+	        /**渠道**/
+	        String channelId = "99999999";//支付机构代码
+	        /**产品id**/
+	        String productId = "";
+	        /**交易金额**/
+	        BigDecimal amount = new BigDecimal(txnsLog.getAmount());
+	        /**佣金**/
+	        BigDecimal commission = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTradcomm()+"")?txnsLog.getTradcomm():0);
+	        /**手续费**/
+	        BigDecimal charge = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTxnfee()+"")?txnsLog.getTxnfee():0L);
+	        /**金额D**/
+	        BigDecimal amountD = new BigDecimal(0);
+	        /**金额E**/
+	        BigDecimal amountE = new BigDecimal(0);
+	        
+	        TradeInfo tradeInfo = new TradeInfo(txnsLog.getTxnseqno(), payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
+	        tradeInfo.setCoopInstCode(txnsLog.getAccfirmerno());
+	        
+	        log.info(JSON.toJSONString(tradeInfo));
+	        try {
+				accEntryService.accEntryProcess(tradeInfo,EntryEvent.AUDIT_PASS);
+				resultBean = new ResultBean("success");
+			}  catch (AccBussinessException e) {
+	            resultBean = new ResultBean(e.getCode(), e.getMessage());
+	            e.printStackTrace();
+	        } catch (AbstractBusiAcctException e) {
+	            resultBean = new ResultBean(e.getCode(), e.getMessage());
+	            e.printStackTrace();
+	        } catch (NumberFormatException e) {
+	            resultBean = new ResultBean("T099", e.getMessage());
+	            e.printStackTrace();
+	        } catch (IllegalEntryRequestException e) {
+				// TODO Auto-generated catch block
+	        	resultBean = new ResultBean(e.getCode(), e.getMessage());
+				e.printStackTrace();
+			}
+	        
+	        if(resultBean.isResultBool()){
+	        	updateRefundResult( txnsLog.getTxnseqno(),"","0000","交易成功");
+	            txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
+	            txnsLog.setApporderinfo("退款账务成功");
+	            order.setStatus("00");
+	            TxnsRefundModel refund = txnsRefundService.getRefundByTxnseqno(tradeBean.getTxnseqno());
+	            refund.setStatus("00");
+	            txnsRefundService.update(refund);
+	        }else{
+	        	updateRefundResult( txnsLog.getTxnseqno(),"","0099",resultBean.getErrMsg());
+	            txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+	            txnsLog.setApporderinfo(resultBean.getErrMsg());
+	        }
+	        txnsLogService.updateAppStatus(tradeBean.getTxnseqno(), txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
+	        txnsOrderinfoDAO.update(order);
+	        log.info("交易:"+tradeBean.getTxnseqno()+"退款账务处理成功");
+		}else if(businessEnum == BusinessEnum.REFUND_INDUSTRY){
+			
+			//记录退款的流水
+			String payordno = updateRefund(tradeBean.getTxnseqno(),txnsLog.getAccmemberid());
+			/**支付订单号**/
+	        
+	        /**交易类型**/
+	        String busiCode = txnsLog.getBusicode();
+	        /**付款方会员ID**/
+	        String payMemberId =  txnsLog.getAccmemberid();
+	        /**收款方会员ID**/
+	        String payToMemberId = txnsLog.getAccsecmerno();
+	        /**收款方父级会员ID**/
+	        String payToParentMemberId="" ;
+	        /**渠道**/
+	        String channelId = "99999999";//支付机构代码
+	        /**产品id**/
+	        String productId = "";
+	        /**交易金额**/
+	        BigDecimal amount = new BigDecimal(txnsLog.getAmount());
+	        /**佣金**/
+	        BigDecimal commission = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTradcomm()+"")?txnsLog.getTradcomm():0);
+	        /**手续费**/
+	        BigDecimal charge = new BigDecimal(StringUtil.isNotEmpty(txnsLog.getTxnfee()+"")?txnsLog.getTxnfee():0L);
+	        /**金额D**/
+	        BigDecimal amountD = new BigDecimal(0);
+	        /**金额E**/
+	        BigDecimal amountE = new BigDecimal(0);
+	        TradeInfo tradeInfo = new TradeInfo(txnsLog.getTxnseqno(), payordno, busiCode, payMemberId, payToMemberId, payToParentMemberId, channelId, productId, amount, commission, charge, amountD, amountE, false);
+	        tradeInfo.setCoopInstCode(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
+	        tradeInfo.setAccess_coopInstCode(txnsLog.getAccfirmerno());
+	        tradeInfo.setIndustry_group_member_tag(industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(txnsLog.getAccmemberid(), txnsLog.getGroupcode()).getUniqueTag());
+	        log.info(JSON.toJSONString(tradeInfo));
+	        try {
+				accEntryService.accEntryProcess(tradeInfo,EntryEvent.AUDIT_PASS);
+				resultBean = new ResultBean("success");
+			}  catch (AccBussinessException e) {
+	            resultBean = new ResultBean(e.getCode(), e.getMessage());
+	            e.printStackTrace();
+	        } catch (AbstractBusiAcctException e) {
+	            resultBean = new ResultBean(e.getCode(), e.getMessage());
+	            e.printStackTrace();
+	        } catch (NumberFormatException e) {
+	            resultBean = new ResultBean("T099", e.getMessage());
+	            e.printStackTrace();
+	        } catch (IllegalEntryRequestException e) {
+				// TODO Auto-generated catch block
+	        	resultBean = new ResultBean(e.getCode(), e.getMessage());
+				e.printStackTrace();
+			}
+	        
+	        if(resultBean.isResultBool()){
+	        	updateRefundResult( txnsLog.getTxnseqno(),"","0000","交易成功");
+	            txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
+	            txnsLog.setApporderinfo("退款账务成功");
+	            order.setStatus("00");
+	            TxnsRefundModel refund = txnsRefundService.getRefundByTxnseqno(tradeBean.getTxnseqno());
+	            refund.setStatus("00");
+	            txnsRefundService.update(refund);
+	        }else{
+	        	updateRefundResult( txnsLog.getTxnseqno(),"","0099",resultBean.getErrMsg());
+	            txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
+	            txnsLog.setApporderinfo(resultBean.getErrMsg());
+	        }
+	        txnsLogService.updateAppStatus(tradeBean.getTxnseqno(), txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
+	        txnsOrderinfoDAO.update(order);
+	        log.info("交易:"+tradeBean.getTxnseqno()+"退款账务处理成功");
 		}
-        
-        if(resultBean.isResultBool()){
-        	updateRefundResult( txnsLog.getTxnseqno(),"","0000","交易成功");
-            txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
-            txnsLog.setApporderinfo("退款账务成功");
-            order.setStatus("00");
-            TxnsRefundModel refund = txnsRefundService.getRefundByTxnseqno(tradeBean.getTxnseqno());
-            refund.setStatus("00");
-            txnsRefundService.update(refund);
-        }else{
-        	updateRefundResult( txnsLog.getTxnseqno(),"","0099",resultBean.getErrMsg());
-            txnsLog.setApporderstatus(AccStatusEnum.AccountingFail.getCode());
-            txnsLog.setApporderinfo(resultBean.getErrMsg());
-        }
-        txnsLogService.updateAppStatus(tradeBean.getTxnseqno(), txnsLog.getApporderstatus(), txnsLog.getApporderinfo());
-        txnsOrderinfoDAO.update(order);
-        log.info("交易:"+tradeBean.getTxnseqno()+"退款账务处理成功");
+		
+		
 		return resultBean;
 	}
 	@Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)

@@ -31,7 +31,7 @@ import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
  * @date 2015年8月29日 下午3:40:27
  * @since 
  */
-@Repository("txnsOrderinfo")
+@Repository("txnsOrderinfoDAO")
 public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoModel> implements ITxnsOrderinfoDAO{
 	
     public Session getSession() {
@@ -67,7 +67,7 @@ public class TxnsOrderinfoDAOImpl extends HibernateBaseDAOImpl<TxnsOrderinfoMode
        // }
     }
     
-    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
+    @Transactional(propagation=Propagation.REQUIRES_NEW,rollbackFor=Throwable.class)
     public void updateOrderToSuccess(String txnseqno) {
         String hql = "update TxnsOrderinfoModel set status = ? where relatetradetxn = ? ";
         Session session = getSession();

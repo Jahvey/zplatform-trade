@@ -24,6 +24,7 @@ import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.acc.pojo.Money;
 import com.zlebank.zplatform.acc.service.AccEntryService;
 import com.zlebank.zplatform.acc.service.AccountQueryService;
+import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
 import com.zlebank.zplatform.commons.utils.Base64Utils;
 import com.zlebank.zplatform.commons.utils.RSAUtils;
 import com.zlebank.zplatform.member.bean.CoopInstiMK;
@@ -43,6 +44,7 @@ import com.zlebank.zplatform.trade.bean.AccountTradeBean;
 import com.zlebank.zplatform.trade.bean.AppPartyBean;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.exception.TradeException;
+import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
 import com.zlebank.zplatform.trade.service.IAccountPayService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.utils.DateUtil;
@@ -88,8 +90,9 @@ public class AccountPayServiceImpl implements IAccountPayService{
 	        try {
 	            String commiteTime = DateUtil.getCurrentDateTime();
 	            //开始账户余额支付
-	            ConsumeAccounting accounting = new ConsumeAccounting();
-	            ResultBean resultBean =accounting.accountedFor(accountTrade.getTxnseqno());
+	            ResultBean resultBean = AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.consumption).accountedFor(accountTrade.getTxnseqno());
+	            //ConsumeAccounting accounting = new ConsumeAccounting();
+	            //ResultBean resultBean =accounting.accountedFor();
 	            if(!resultBean.isResultBool()){
 	                throw new TradeException("AP05");
 	            }
@@ -120,10 +123,9 @@ public class AccountPayServiceImpl implements IAccountPayService{
         try {
             String commiteTime = DateUtil.getCurrentDateTime();
             //开始账户余额支付
-            ConsumeAccounting accounting = new ConsumeAccounting();
-            ResultBean resultBean =accounting.accountedFor(accountTrade.getTxnseqno());
+            ResultBean resultBean = AccountingAdapterFactory.getInstance().getAccounting(BusiTypeEnum.consumption).accountedFor(accountTrade.getTxnseqno());
             if(!resultBean.isResultBool()){
-               // throw new TradeException("AP05");
+            	throw new TradeException("AP05");
             }
             //更新账户支付信息
             txnsLogService.updateAccountTrade(accountTrade, resultBean);
@@ -149,7 +151,7 @@ public class AccountPayServiceImpl implements IAccountPayService{
 			memberBean.setInstiId(pojo.getInstiId());
 			memberBean.setPaypwd(accountTrade.getPay_pwd());
 			// 校验支付密码
-			if (!memberOperationServiceImpl.verifyPayPwd(MemberType.INDIVIDUAL,
+			if (memberOperationServiceImpl.verifyPayPwd(MemberType.INDIVIDUAL,
 			        memberBean)) {
 				 throw new TradeException("AP05");
 			}

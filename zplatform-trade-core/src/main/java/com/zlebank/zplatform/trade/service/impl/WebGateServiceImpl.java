@@ -347,7 +347,7 @@ public class WebGateServiceImpl extends BaseServiceImpl<TxnsOrderinfoModel, Long
     public void bindPay(TradeBean trade) throws TradeException{
         // 直接获取短信验证码
         PojoQuickpayCust custCard = quickpayCustDAO.getById(Long.valueOf(trade.getBindCardId()));
-        ResultBean routResultBean = routeConfigService.getWapTransRout(DateUtil.getCurrentDateTime(), trade.getAmount()+"", StringUtil.isNotEmpty(trade.getSubMerchId())?trade.getSubMerchId():trade.getMerchId(), trade.getBusicode(), trade.getCardNo());
+        ResultBean routResultBean = routeConfigService.getWapTransRout(DateUtil.getCurrentDateTime(), trade.getAmount()+"", StringUtil.isNotEmpty(trade.getSubMerchId())?trade.getSubMerchId():trade.getMerchId(), trade.getBusicode(), custCard.getCardno());
         String routId = routResultBean.getResultObj().toString();
         trade.setReaPayOrderNo(OrderNumber.getInstance()
                 .generateReaPayOrderId());

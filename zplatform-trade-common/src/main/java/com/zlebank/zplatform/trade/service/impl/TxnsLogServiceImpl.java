@@ -451,22 +451,15 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     
     @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void saveAccountTrade(AccountTradeBean accountTrade) throws TradeException{
-        
         try {
-          TxnsLogModel txnsLog = super.get(accountTrade.getTxnseqno());
-          txnsLog.setPaytype("03"); //支付类型（01：快捷，02：网银，03：账户）
-          txnsLog.setPayordno(OrderNumber.getInstance().generateAppOrderNo());//支付定单号
-          txnsLog.setPayinst("99999999");//支付所属机构
-          txnsLog.setPayfirmerno(accountTrade.getMemberId());//支付一级商户号-个人会员
-          //txnsLog.setPaysecmerno(payPartyBean.getPaysecmerno());//支付二级商户号
-          txnsLog.setPayordcomtime(DateUtil.getCurrentDateTime());//支付定单提交时间
-          
-          //更新交易流水表交易位
-          txnsLog.setRelate("01000000");
-          txnsLog.setTradetxnflag("01000000");
-          txnsLog.setCashcode("");
-          //支付定单完成时间
-          super.update(txnsLog);
+          PayPartyBean payPartyBean = new PayPartyBean();
+          payPartyBean.setPaytype("03");
+          payPartyBean.setPayordno(OrderNumber.getInstance().generateAppOrderNo());//支付定单号
+          payPartyBean.setPayinst("99999999");//支付所属机构
+          payPartyBean.setPayfirmerno(accountTrade.getMemberId());//支付一级商户号-个人会员
+          payPartyBean.setPayordcomtime(DateUtil.getCurrentDateTime());//支付定单提交时间
+          payPartyBean.setTxnseqno(accountTrade.getTxnseqno());
+          updatePayInfo_Fast(payPartyBean);
       } catch (Exception e) {
          throw new TradeException("AC03");
       }
@@ -476,18 +469,16 @@ public class TxnsLogServiceImpl extends BaseServiceImpl<TxnsLogModel, String> im
     @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public void updateAccountTrade(AccountTradeBean accountTrade,ResultBean resultBean) throws TradeException{
         try {
-            TxnsLogModel txnsLog = super.get(accountTrade.getTxnseqno());
-            txnsLog.setPayretinfo(resultBean.getErrMsg());
-            txnsLog.setPayretcode(resultBean.getErrCode());
+           String retcode = "";
+           String retinfo = "";
             if(resultBean.isResultBool()){
-                txnsLog.setPayordfintime(DateUtil.getCurrentDateTime());
-                txnsLog.setRetcode("0000");
-                txnsLog.setRetinfo("支付成功");
+                retcode = "0000";
+                retinfo = "支付成功";
             }else{
-                txnsLog.setRetcode(resultBean.getErrCode());
-                txnsLog.setRetinfo(resultBean.getErrMsg());
+                retcode = resultBean.getErrCode();
+                retinfo = resultBean.getErrMsg();
             }
-            super.update(txnsLog);
+            updatePayInfo_Fast_result(accountTrade.getTxnseqno(), "", retcode, retinfo);
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

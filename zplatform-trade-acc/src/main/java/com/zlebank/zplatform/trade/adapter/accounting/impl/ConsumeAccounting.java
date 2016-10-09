@@ -76,7 +76,9 @@ public class ConsumeAccounting implements IAccounting{
  			resultBean = commonTradeAccounting(txnsLog);
  			log.info("交易:"+txnseqno+"结束一般消费账务");
  		}else if(businessEnum==BusinessEnum.CONSUME_INDUSTRY){
- 			
+ 			log.info("交易:{}开始行业消费账务",txnseqno);
+ 			resultBean=industryTradeAccounting(txnsLog);
+ 			log.info("交易:{}结束行业消费账务",txnseqno);
  		}
  		log.info("交易:"+txnseqno+"消费入账结束");
      	return resultBean;
@@ -297,6 +299,7 @@ public class ConsumeAccounting implements IAccounting{
     public ResultBean industryTradeAccounting(TxnsLogModel txnsLog){
     	ResultBean resultBean = null;
     	InduGroupMemberBean groupMember = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(txnsLog.getAccmemberid(), txnsLog.getGroupcode());
+    	InduGroupMemberBean groupMerch = industryGroupMemberService.getGroupMemberByMemberIdAndGroupCode(txnsLog.getAccsecmerno(), txnsLog.getGroupcode());
     	try {
             /**支付订单号**/
             String payordno = txnsLog.getPayordno();
@@ -338,7 +341,7 @@ public class ConsumeAccounting implements IAccounting{
             
             tradeInfo.setCoopInstCode(coopInstCode);
             tradeInfo.setAccess_coopInstCode(access_coopInstCode);
-            tradeInfo.setIndustry_group(txnsLog.getGroupcode());
+            tradeInfo.setIndustry_group_member_tag(groupMember.getUniqueTag());
             /*tradeInfo.setPayordno(payordno);
             tradeInfo.setTxnseqno(txnseqno);
             tradeInfo.setAmount(amount);;

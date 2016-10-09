@@ -64,6 +64,8 @@ public class ExtractOrderBean implements Serializable{
 	private String backUrl = "";
 	@Length(max = 40, message = "param.error.customerIp")
 	private String customerIp = "";
+	
+	private String groupCode;
 	/**
 	 * @return the coopInstiId
 	 */
@@ -231,6 +233,18 @@ public class ExtractOrderBean implements Serializable{
 	 */
 	public void setCustomerIp(String customerIp) {
 		this.customerIp = customerIp;
+	}
+	/**
+	 * @return the groupCode
+	 */
+	public String getGroupCode() {
+		return groupCode;
+	}
+	/**
+	 * @param groupCode the groupCode to set
+	 */
+	public void setGroupCode(String groupCode) {
+		this.groupCode = groupCode;
 	}
 	
 	

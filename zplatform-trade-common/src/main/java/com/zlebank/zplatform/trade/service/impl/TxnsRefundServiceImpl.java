@@ -65,6 +65,7 @@ public class TxnsRefundServiceImpl extends BaseServiceImpl<TxnsRefundModel,Long>
         return super.getUniqueByHQL(hql, new Object[]{refundorderno});
     }
     
+    @Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)
     public Long getSumAmtByOldTxnseqno(String txnseqno_old){
     	String sql = "select nvl(sum(t.amount),0) totalamt from t_txns_refund t where t.oldtxnseqno=? and t.status not in(?,?,?) ";
     	List<Map<String, Object>> queryBySQL = (List<Map<String, Object>>) queryBySQL(sql, new Object[]{txnseqno_old,"09","19","29"});

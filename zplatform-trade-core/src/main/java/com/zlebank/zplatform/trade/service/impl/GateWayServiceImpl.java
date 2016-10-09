@@ -136,6 +136,7 @@ import com.zlebank.zplatform.trade.service.ITxnsSplitAccountService;
 import com.zlebank.zplatform.trade.service.ITxnsWithdrawService;
 import com.zlebank.zplatform.trade.service.ITxnsWithholdingService;
 import com.zlebank.zplatform.trade.service.RefundRouteConfigService;
+import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.DateUtil;
@@ -217,6 +218,8 @@ public class GateWayServiceImpl extends
 	private BankInfoDAO bankInfoDAO;
 	@Autowired
 	private FinanceProductService financeProductService;
+	@Autowired
+	private TradeNotifyService tradeNotifyService;
 	/**
 	 *
 	 * @return
@@ -2447,11 +2450,6 @@ public class GateWayServiceImpl extends
 		if ("999999999999999".equals(acctPayBean.getMemberId())) {
 			throw new TradeException("AP09");
 		}
-		/*
-		 * if(!acctPayBean.getMemberId().equals(txnsLog.getAccmemberid())){
-		 * throw new TradeException("AP10"); }
-		 */
-
 		ResultBean resultBean = null;
 		try {
 			AccountTradeBean accountTrade = new AccountTradeBean(
@@ -2467,48 +2465,7 @@ public class GateWayServiceImpl extends
 		}
 		saveAcctTrade(txnsLog.getTxnseqno(), orderinfo.getOrderno(), resultBean);
 		if (resultBean.isResultBool()) {
-			/*ResultBean orderResp = generateRespMessage(orderinfo.getOrderno(),
-					txnsLog.getAccfirmerno());
-			if (orderResp.isResultBool()) {
-				TxnsOrderinfoModel gatewayOrderBean = getOrderinfoByOrderNo(orderinfo
-						.getOrderno());
-				OrderRespBean respBean = (OrderRespBean) orderResp
-						.getResultObj();
-				new SynHttpRequestThread(gatewayOrderBean.getFirmemberno(),
-						gatewayOrderBean.getRelatetradetxn(),
-						gatewayOrderBean.getBackurl(),
-						respBean.getNotifyParam()).start();
-			} else {
-				throw new TradeException("AP07");
-			}*/
-			
-			ResultBean orderResp = 
-			        generateAsyncRespMessage(txnsLog.getTxnseqno());
-			if(orderResp.isResultBool()) {
-				if("000205".equals(orderinfo.getBiztype())){
-	        		AnonOrderAsynRespBean respBean = (AnonOrderAsynRespBean) orderResp.getResultObj();
-	        		
-	        		InsteadPayNotifyTask task = new InsteadPayNotifyTask();
-	        		//对匿名支付订单数据进行加密加签
-	        		responseData(respBean, txnsLog.getAccfirmerno(), txnsLog.getAccsecmerno(), task);
-	        		new SynHttpRequestThread(
-	                        StringUtil.isNotEmpty(orderinfo.getSecmemberno())?orderinfo.getSecmemberno():orderinfo.getFirmemberno(),
-	                        		orderinfo.getRelatetradetxn(),
-	                        		orderinfo.getBackurl(),
-	                        task).start();
-	        	}else if("000201".equals(orderinfo.getBiztype())){
-	        		OrderAsynRespBean respBean = (OrderAsynRespBean) orderResp
-	                        .getResultObj();
-	                new SynHttpRequestThread(
-	                		StringUtil.isNotEmpty(orderinfo.getSecmemberno())?orderinfo.getSecmemberno():orderinfo.getFirmemberno(),
-	                				orderinfo.getRelatetradetxn(),
-	                				orderinfo.getBackurl(),
-	                        respBean.getNotifyParam()).start();
-	        	}
-			   
-			}else {
-				//throw new TradeException("AP07");
-			}
+			tradeNotifyService.notify(txnsLog.getTxnseqno());
 		} else {
 			throw new TradeException("AP05");
 		}

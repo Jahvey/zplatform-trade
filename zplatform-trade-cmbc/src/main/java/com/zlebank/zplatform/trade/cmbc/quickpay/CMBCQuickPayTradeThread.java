@@ -232,7 +232,7 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 			log.debug(JSON.toJSONString(trade));
 		}
 		trade.setPayinstiId(PAYINSTID);
-		if("0".equals(trade.getSmsFlag())){
+		if(!"0".equals(trade.getSmsFlag())){
 			sendSms(trade);
 		}
 		resultBean = new ResultBean("success");

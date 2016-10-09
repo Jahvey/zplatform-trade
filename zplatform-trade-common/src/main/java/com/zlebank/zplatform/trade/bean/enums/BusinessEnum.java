@@ -54,7 +54,7 @@ public enum BusinessEnum {
     CHARGE_INDUSTRY("20000005"),//充值-行业
     TRANSFER_INDUSTRY("50000003"),//转账-行业
     EXTRACT_INDUSTRY("50000004"),//提取-行业
-    REFUND_INDUSTRY("40000003"),//退款-行业
+    REFUND_INDUSTRY("40000005"),//退款-行业
     UNKNOW("");//未知
     private String busiCode;
     

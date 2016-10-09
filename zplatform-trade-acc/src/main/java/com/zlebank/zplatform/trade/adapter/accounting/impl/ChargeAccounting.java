@@ -209,9 +209,9 @@ public class ChargeAccounting implements IAccounting {
 			/** 交易类型 **/
 			String busiCode = txnsLog.getBusicode();
 			/** 付款方会员ID **/
-			String payMemberId = groupMember.getUniqueTag();
+			String payMemberId = txnsLog.getAccmemberid();
 			/** 收款方会员ID **/
-			String payToMemberId = groupMember.getUniqueTag();
+			String payToMemberId = txnsLog.getAccmemberid();
 			
 			/** 收款方父级会员ID **/
 			String payToParentMemberId = "";
@@ -241,7 +241,7 @@ public class ChargeAccounting implements IAccounting {
 			tradeInfo.setPayordno(payordno);
 			tradeInfo.setCoopInstCode(coopInstCode);
             tradeInfo.setAccess_coopInstCode(access_coopInstCode);
-            tradeInfo.setIndustry_group(txnsLog.getGroupcode());
+            tradeInfo.setIndustry_group_member_tag(groupMember.getUniqueTag());
 			log.info(JSON.toJSONString(tradeInfo));
 			try {
 				accEntryService.accEntryProcess(tradeInfo,
