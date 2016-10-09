@@ -236,7 +236,6 @@ public class TransferAccounting implements IAccounting {
 		tradeInfo.setCoopInstCode(coopInstCode);
         tradeInfo.setAccess_coopInstCode(access_coopInstCode);
         tradeInfo.setIndustry_group_member_tag(fromGroupMember.getUniqueTag());
-        
 		log.info(JSON.toJSONString(tradeInfo));
 		try {
 			accEntryService.accEntryProcess(tradeInfo, EntryEvent.TRADE_SUCCESS);

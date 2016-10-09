@@ -1,11 +1,8 @@
 package com.zlebank.zplatform.trade.service.impl;
 
 import java.math.BigDecimal;
-import java.nio.channels.Channel;
 import java.util.List;
 import java.util.Map;
-
-import net.sf.json.JSONObject;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -16,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.acc.bean.BusiAcctQuery;
 import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
-import com.zlebank.zplatform.acc.bean.enums.BusiType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.acc.service.AccountQueryService;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -40,6 +36,7 @@ import com.zlebank.zplatform.member.service.MerchService;
 import com.zlebank.zplatform.trade.bean.ResultBean;
 import com.zlebank.zplatform.trade.bean.enums.BusinessEnum;
 import com.zlebank.zplatform.trade.bean.enums.ChannelEnmu;
+import com.zlebank.zplatform.trade.bean.enums.CurrencyEnum;
 import com.zlebank.zplatform.trade.bean.enums.TradeStatFlagEnum;
 import com.zlebank.zplatform.trade.bean.gateway.BailRechargeOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.BailWithdrawOrderBean;
@@ -48,22 +45,23 @@ import com.zlebank.zplatform.trade.bean.gateway.QueryAccResultBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.exception.CommonException;
-import com.zlebank.zplatform.trade.exception.CommonException;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
 import com.zlebank.zplatform.trade.model.TxncodeDefModel;
 import com.zlebank.zplatform.trade.model.TxnsLogModel;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.service.IAccoutTradeService;
-import com.zlebank.zplatform.trade.service.IGateWayService;
 import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 import com.zlebank.zplatform.trade.service.enums.AccTradeExcepitonEnum;
+import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
 import com.zlebank.zplatform.trade.utils.UUIDUtil;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
+
+import net.sf.json.JSONObject;
 
 @Service("accountTradeService")
 public class AccountTradeServiceImpl extends
@@ -73,8 +71,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	private ITxncodeDefService txncodeDefService;
 	@Autowired
 	private MerchService merchService;
-	@Autowired
-	private IGateWayService gateWayService;
 	@Autowired
 	private CoopInstiService coopInstiService;
 	@Autowired
@@ -106,6 +102,9 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
     		return result;
     	}
     	Usage usage=Usage.fromValue(query.getAccoutType());
+    	if(usage==null || usage.equals(Usage.UNKNOW)){
+    		throw  new CommonException(AccTradeExcepitonEnum.AQ02.getErrorCode());
+    	}
     	MemberBean queryBean = new MemberBean();
     	queryBean.setMemberId(query.getMemberId());
     	try {
@@ -130,12 +129,16 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
          if(!resultBean.isResultBool()){
         	 throw new CommonException(AccTradeExcepitonEnum.TE00.getErrorCode());
          }
+         CurrencyEnum  rmb = CurrencyEnum.fromValue(order.getCurrencyCode());
+         if(rmb==null || rmb.equals(CurrencyEnum.UNKNOW)){
+        	 throw  new CommonException(AccTradeExcepitonEnum.CURRENCY.getErrorCode());
+         }
 		/*******保存订单的日志*******/
 		//基本信息
 		//判断订单是否存在
 		List<TxnsOrderinfoModel> orderinfoList = this.getOrderList(
 				order.getOrderId(), order.getTxnTime(),order.getFromMerId());
-		if (orderinfoList.size() == 1) {
+		if (orderinfoList!=null && orderinfoList.size() >0) {
 			TxnsLogModel txnsLog = txnsLogService
 					.getTxnsLogByTxnseqno(orderinfoList.get(0)
 							.getRelatetradetxn());
@@ -220,7 +223,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		txnsLog.setAmount(Long.valueOf(order.getTxnAmt()));
 		txnsLog.setAccordno(order.getOrderId());
 		txnsLog.setAccfirmerno(order.getCoopInstiId());
-		txnsLog.setAcccoopinstino(order.getCoopInstiId());
+		txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
 		
 		//付款方
 		txnsLog.setAccsecmerno(order.getFromMerId());
@@ -259,7 +262,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getToMerId());
-		orderinfo.setCurrencycode("156");
+		orderinfo.setCurrencycode(order.getCurrencyCode());
 		orderinfo.setPayerip(order.getCustomerIp());
 		try {
 			txnsLogService.saveTxnsLog(txnsLog);
@@ -297,7 +300,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
-		return txnsLog.getTxnseqno();
+		return orderinfo.getTn();
 	}
 	
 	@Override
@@ -310,11 +313,15 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
         if(!resultBean.isResultBool()){
         	 throw  new CommonException(AccTradeExcepitonEnum.BC00.getErrorCode());
         }
+        CurrencyEnum  rmb = CurrencyEnum.fromValue(order.getCurrencyCode());
+        if(rmb==null || rmb.equals(CurrencyEnum.UNKNOW)){
+       	 throw  new CommonException(AccTradeExcepitonEnum.CURRENCY.getErrorCode());
+        }
 		//基本信息
 		//判断订单是否存在
 		List<TxnsOrderinfoModel> orderinfoList = this.getOrderList(
 				order.getOrderId(), order.getTxnTime(),order.getFromMerId());
-		if (orderinfoList.size() == 1) {
+		if (orderinfoList!=null && orderinfoList.size() >0) {
 			TxnsLogModel txnsLog = txnsLogService
 					.getTxnsLogByTxnseqno(orderinfoList.get(0)
 							.getRelatetradetxn());
@@ -397,7 +404,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		txnsLog.setAmount(Long.valueOf(order.getTxnAmt()));
 		txnsLog.setAccordno(order.getOrderId());
 		txnsLog.setAccfirmerno(order.getCoopInstiId());
-		txnsLog.setAcccoopinstino(order.getCoopInstiId());
+		txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
 		//付款方
 		txnsLog.setAccsecmerno(order.getFromMerId());
 		txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
@@ -439,7 +446,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
-		orderinfo.setCurrencycode("156");
+		orderinfo.setCurrencycode(order.getCurrencyCode());
 		try {
 			txnsLogService.saveTxnsLog(txnsLog);
 		} catch (TradeException e1) {
@@ -486,7 +493,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
-		return txnsLog.getTxnseqno();
+		return  orderinfo.getTn();
 	}
 
 	public void  updateAccountResult(TxnsLogModel txnsLog,String retCode, String retInfo, String appinfo){
@@ -519,11 +526,15 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
         if(!resultBean.isResultBool()){
         	 throw  new CommonException(AccTradeExcepitonEnum.BW00.getErrorCode());
         }
+        CurrencyEnum  rmb = CurrencyEnum.fromValue(order.getCurrencyCode());
+        if(rmb==null || rmb.equals(CurrencyEnum.UNKNOW)){
+       	 throw  new CommonException(AccTradeExcepitonEnum.CURRENCY.getErrorCode());
+        }
 		//基本信息
 		//判断订单是否存在
 		List<TxnsOrderinfoModel> orderinfoList = this.getOrderList(
 				order.getOrderId(), order.getTxnTime(),order.getFromMerId());
-		if (orderinfoList.size() == 1) {
+		if (orderinfoList!=null && orderinfoList.size() >0) {
 			TxnsLogModel txnsLog = txnsLogService
 					.getTxnsLogByTxnseqno(orderinfoList.get(0)
 							.getRelatetradetxn());
@@ -607,7 +618,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		txnsLog.setAmount(Long.valueOf(order.getTxnAmt()));
 		txnsLog.setAccordno(order.getOrderId());
 		txnsLog.setAccfirmerno(order.getCoopInstiId());
-		txnsLog.setAcccoopinstino(order.getCoopInstiId());
+		txnsLog.setAcccoopinstino(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
 		//付款方
 		txnsLog.setAccsecmerno(order.getFromMerId());
 		txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
@@ -644,7 +655,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		orderinfo.setTn(OrderNumber.getInstance().generateTN(
 				order.getCoopInstiId()));
 		orderinfo.setMemberid(order.getFromMerId());
-		orderinfo.setCurrencycode("156");
+		orderinfo.setCurrencycode(order.getCurrencyCode());
 		try {
 			txnsLogService.saveTxnsLog(txnsLog);
 		} catch (TradeException e1) {
@@ -684,7 +695,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
-		return txnsLog.getTxnseqno();
+		return  orderinfo.getTn();
 	}
 	
 	
@@ -701,7 +712,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
         txnsLog.setPaytype("08"); //支付类型（01：快捷，02：网银，03：账户,07：退款，08：财务类）
         txnsLog.setPayordno(OrderNumber.getInstance().generateAppOrderNo());//支付定单号
          //渠道号
-      	txnsLog.setPayinst(channelId);
+    	txnsLog.setPayinst(null==channelId?ChannelEnmu.INNERCHANNEL.getChnlcode():channelId);
         txnsLog.setPayfirmerno(fromMember);//支付一级商户号-个人会员
         txnsLog.setPaysecmerno(toMember);//支付二级商户号
         txnsLog.setPayordcomtime(DateUtil.getCurrentDateTime());//支付定单提交时间

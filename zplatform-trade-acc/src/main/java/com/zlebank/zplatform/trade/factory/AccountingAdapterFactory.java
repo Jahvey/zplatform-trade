@@ -11,6 +11,9 @@
 package com.zlebank.zplatform.trade.factory;
 
 import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
+import com.zlebank.zplatform.trade.accounting.credit.CreditConsumeAccounting;
+import com.zlebank.zplatform.trade.accounting.credit.CreditRechargeAccounting;
+import com.zlebank.zplatform.trade.accounting.credit.CreditRefundAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.IAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.ChargeAccounting;
 import com.zlebank.zplatform.trade.adapter.accounting.impl.ConsumeAccounting;
@@ -88,7 +91,7 @@ public class AccountingAdapterFactory {
 	public IAccounting getAccounting(BusinessEnum code) {
 		IAccounting accounting = null;
 		switch (code) {
-			/*case CREDIT_RECHARGE:
+			case CREDIT_RECHARGE:
 				accounting = new CreditRechargeAccounting();
 				break;
 			case CREDIT_CONSUME:
@@ -98,7 +101,7 @@ public class AccountingAdapterFactory {
 				accounting = new CreditRefundAccounting();
 				break;
 			default:
-				break;*/
+				break;
 		}
 		return accounting;
 		}
