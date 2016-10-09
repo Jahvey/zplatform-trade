@@ -67,7 +67,7 @@ import com.zlebank.zplatform.trade.utils.UUIDUtil;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
 
 import net.sf.json.JSONObject;
-@Service
+@Service("creditAccountServiceImpl")
 public class CreditAccountServiceImpl extends
 BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 
