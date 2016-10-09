@@ -274,7 +274,7 @@ public class TransferAccounting implements IAccounting {
 		txnsLog.setAppordcommitime(DateUtil.getCurrentDateTime());
 		txnsLog.setAppinst("000000000000");// 没实际意义，可以为空
 		if ("0000".equals(retCode)) {
-			txnsLog.setApporderinfo("转账账务成功");
+			txnsLog.setApporderinfo("行业专户转账账务成功");
 			txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
 			txnsLog.setTradetxnflag(TradeStatFlagEnum.FINISH_SUCCESS.getStatus());
 			txnsOrderinfoDAO.updateOrderToSuccess(txnsLog.getTxnseqno());
@@ -379,7 +379,7 @@ public class TransferAccounting implements IAccounting {
 		txnsLog.setAppordcommitime(DateUtil.getCurrentDateTime());
 		txnsLog.setAppinst("000000000000");// 没实际意义，可以为空
 		if ("0000".equals(retCode)) {
-			txnsLog.setApporderinfo("转账账务成功");
+			txnsLog.setApporderinfo("行业专户提取账务成功");
 			txnsLog.setApporderstatus(AccStatusEnum.Finish.getCode());
 			txnsLog.setTradetxnflag(TradeStatFlagEnum.FINISH_SUCCESS.getStatus());
 			txnsOrderinfoDAO.updateOrderToSuccess(txnsLog.getTxnseqno());

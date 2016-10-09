@@ -96,6 +96,7 @@ import com.zlebank.zplatform.trade.bean.gateway.OrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.OrderRespBean;
 import com.zlebank.zplatform.trade.bean.gateway.QueryBean;
 import com.zlebank.zplatform.trade.bean.gateway.QueryResultBean;
+import com.zlebank.zplatform.trade.bean.gateway.RefundOrderBean;
 import com.zlebank.zplatform.trade.bean.gateway.RiskRateInfoBean;
 import com.zlebank.zplatform.trade.bean.gateway.SplitAcctBean;
 import com.zlebank.zplatform.trade.bean.wap.WapAcctPayBean;
@@ -135,7 +136,9 @@ import com.zlebank.zplatform.trade.service.ITxnsRefundService;
 import com.zlebank.zplatform.trade.service.ITxnsSplitAccountService;
 import com.zlebank.zplatform.trade.service.ITxnsWithdrawService;
 import com.zlebank.zplatform.trade.service.ITxnsWithholdingService;
+import com.zlebank.zplatform.trade.service.IndustryAccountTradeService;
 import com.zlebank.zplatform.trade.service.RefundRouteConfigService;
+import com.zlebank.zplatform.trade.service.RefundService;
 import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
@@ -163,16 +166,12 @@ public class GateWayServiceImpl extends
 	private ITxnsOrderinfoDAO txnsOrderinfoDAO;
 	@Autowired
 	private IRouteConfigService routeConfigService;
-	// @Autowired
-	// private IMemberService memberService;
 	@Autowired
 	private MerchMKService merchMKService;
 	@Autowired
 	private ITxncodeDefService txncodeDefService;
 	@Autowired
 	private ITxnsSplitAccountService txnsSplitAccountService;
-	// @Autowired
-	// private IQuickpayCustService quickpayCustService;
 	@Autowired
 	private ITxnsQuickpayService txnsQuickpayService;
 	@Autowired
@@ -220,6 +219,10 @@ public class GateWayServiceImpl extends
 	private FinanceProductService financeProductService;
 	@Autowired
 	private TradeNotifyService tradeNotifyService;
+	@Autowired
+	private IndustryAccountTradeService industryAccountTradeService;
+	@Autowired
+	private RefundService refundService;
 	/**
 	 *
 	 * @return
@@ -1041,13 +1044,11 @@ public class GateWayServiceImpl extends
 	@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Throwable.class)
 	public String dealWithRefundOrder(WapRefundBean refundBean)
 			throws TradeException {
-		TxnsOrderinfoModel withdrawOrderinfo = super.getUniqueByHQL(
-				"from TxnsOrderinfoModel where orderno = ? ",
-				new Object[] { refundBean.getOrderId() });
+		TxnsOrderinfoModel withdrawOrderinfo = txnsOrderinfoDAO.getOrderinfoByOrderNoAndMemberId(refundBean.getOrderId(), refundBean.getMerId());
 		if (withdrawOrderinfo != null) {
-			if ("00".equals(withdrawOrderinfo.getStatus())) {// 提现成功
+			if ("00".equals(withdrawOrderinfo.getStatus())) {// 退款成功
 				throw new TradeException("T028");
-			} else if ("02".equals(withdrawOrderinfo.getStatus())) {// 提现中，审核中
+			} else if ("02".equals(withdrawOrderinfo.getStatus())) {// 退款中，审核中
 				throw new TradeException("T031");
 			} else {
 				throw new TradeException("T032");//
@@ -1065,6 +1066,7 @@ public class GateWayServiceImpl extends
 		if (old_txnsLog == null) {
 			throw new TradeException("GW14");
 		}
+		
 		///判断交易时间是否超过期限
 		String txnDateTime = old_txnsLog.getAccordfintime();//交易完成时间作为判断依据
 		Date txnDate = DateUtil.parse(DateUtil.DEFAULT_DATE_FROMAT, txnDateTime);
@@ -1105,191 +1107,42 @@ public class GateWayServiceImpl extends
 			e1.printStackTrace();
 			throw new TradeException("T020");
 		}
-
-		PojoMerchDeta member = null;
-		TxnsLogModel txnsLog = null;
-		try {
-			TxncodeDefModel busiModel = txncodeDefService.getBusiCode(
-					refundBean.getTxnType(), refundBean.getTxnSubType(),
-					refundBean.getBizType());
-			if (busiModel == null) {
-				throw new TradeException("");
-			}
-			// member = memberService.get(refundBean.getCoopInstiId());
-			txnsLog = new TxnsLogModel();
-			if (StringUtil.isNotEmpty(refundBean.getMerId())) {// 商户为空时，取商户的各个版本信息
-				member = merchService.getMerchBymemberId(refundBean.getMerId());
-				txnsLog.setRiskver(member.getRiskVer());
-				txnsLog.setSplitver(member.getSpiltVer());
-				txnsLog.setFeever(member.getFeeVer());
-				txnsLog.setPrdtver(member.getPrdtVer());
-				// txnsLog.setCheckstandver(member.getCashver());
-				txnsLog.setRoutver(member.getRoutVer());
-				txnsLog.setAccordinst(member.getParent() + "");
-				txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
-						.valueOf(member.getSetlCycle().toString())));
-			} else {
-				txnsLog.setRiskver(getDefaultVerInfo(
-						refundBean.getCoopInstiId(), busiModel.getBusicode(),
-						13));
-				txnsLog.setSplitver(getDefaultVerInfo(
-						refundBean.getCoopInstiId(), busiModel.getBusicode(),
-						12));
-				txnsLog.setFeever(getDefaultVerInfo(
-						refundBean.getCoopInstiId(), busiModel.getBusicode(),
-						11));
-				txnsLog.setPrdtver(getDefaultVerInfo(
-						refundBean.getCoopInstiId(), busiModel.getBusicode(),
-						10));
-				txnsLog.setRoutver(getDefaultVerInfo(
-						refundBean.getCoopInstiId(), busiModel.getBusicode(),
-						20));
-				txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
-			}
-
-			txnsLog.setTxndate(DateUtil.getCurrentDate());
-			txnsLog.setTxntime(DateUtil.getCurrentTime());
-			txnsLog.setBusicode(busiModel.getBusicode());
-			txnsLog.setBusitype(busiModel.getBusitype());
-			// 核心交易流水号，交易时间（yymmdd）+业务代码+6位流水号（每日从0开始）
-			txnsLog.setTxnseqno(OrderNumber.getInstance().generateTxnseqno(
-					txnsLog.getBusicode()));
-			txnsLog.setAmount(Long.valueOf(refundBean.getTxnAmt()));
-			txnsLog.setAccordno(refundBean.getOrderId());
-			txnsLog.setAccfirmerno(refundBean.getCoopInstiId());
-			txnsLog.setAccsecmerno(refundBean.getMerId());
-			txnsLog.setAcccoopinstino(refundBean.getCoopInstiId());
-			txnsLog.setTxnseqnoOg(old_txnsLog.getTxnseqno());
-			txnsLog.setAccordcommitime(DateUtil.getCurrentDateTime());
-			txnsLog.setTradestatflag("00000000");// 交易初始状态
-			txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
-					.valueOf(member.getSetlCycle().toString())));
-			txnsLog.setAccmemberid(refundBean.getMemberId());
-
-			// 匿名判断
-			String payMember = old_txnsLog.getAccmemberid();
-			boolean anonFlag = false;
-			if ("999999999999999".equals(payMember)) {
-				anonFlag = true;
-			}
-			// 原交易渠道号
-			String payChannelCode = old_txnsLog.getPayinst();
-			// 原交易类型 1000002为账户余额支付
-			String accbusicode = old_txnsLog.getAccbusicode();
-			// 退款路由选择退款渠道或者退款的方式
-			ResultBean refundRoutResultBean = refundRouteConfigService
-					.getTransRout(DateUtil.getCurrentDateTime(),
-							txnsLog.getAmount() + "", "", accbusicode, txnsLog
-									.getPan(), payChannelCode, anonFlag ? "1"
-									: "0");
-			if (refundRoutResultBean.isResultBool()) {
-				log.info(JSON.toJSONString(refundRoutResultBean));
-				String refundRout = refundRoutResultBean.getResultObj()
-						.toString();
-				if ("99999999".equals(refundRout)) {
-					txnsLog.setBusicode(BusinessEnum.REFUND_ACCOUNT
-							.getBusiCode());
-				} else {
-					txnsLog.setBusicode(BusinessEnum.REFUND_BANK.getBusiCode());
-				}
-			}
-			txnsLog.setTxnfee(getTxnFee(txnsLog));
-			txnsLog.setTradcomm(0L);
-			txnsLogService.saveTxnsLog(txnsLog);
-			
-		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T016");
-		} 
-
-		String tn = "";
-		TxnsOrderinfoModel orderinfo = null;
-		try {
-			// 保存订单信息
-			orderinfo = new TxnsOrderinfoModel();
-			orderinfo.setId(OrderNumber.getInstance().generateID());
-			// orderinfo.setInstitution(member.getMerchinsti());
-			orderinfo.setOrderno(refundBean.getOrderId());// 商户提交的订单号
-			orderinfo.setOrderamt(Long.valueOf(refundBean.getTxnAmt()));
-			orderinfo.setOrdercommitime(refundBean.getTxnTime());
-			orderinfo.setRelatetradetxn(txnsLog.getTxnseqno());// 关联的交易流水表中的交易序列号
-			orderinfo.setFirmemberno(refundBean.getCoopInstiId());
-			orderinfo.setFirmembername(coopInstiService.getInstiByInstiCode(
-					refundBean.getCoopInstiId()).getInstiName());
-			orderinfo.setSecmemberno(refundBean.getMerId());
-			orderinfo.setSecmembername(member == null ? "" : member
-					.getAccName());
-			orderinfo.setBackurl(refundBean.getBackUrl());
-			orderinfo.setTxntype(refundBean.getTxnType());
-			orderinfo.setTxnsubtype(refundBean.getTxnSubType());
-			orderinfo.setBiztype(refundBean.getBizType());
-			orderinfo.setReqreserved(refundBean.getReqReserved());
-			orderinfo.setOrderdesc(refundBean.getOrderDesc());
-			orderinfo.setAccesstype(refundBean.getAccessType());
-			orderinfo.setTn(OrderNumber.getInstance().generateTN(
-					txnsLog.getAccfirmerno()));
-			orderinfo.setStatus("02");
-			orderinfo.setMemberid(refundBean.getMemberId());
-			orderinfo.setCurrencycode("156");
-			
-			txnsLogService.tradeRiskControl(txnsLog.getTxnseqno(),txnsLog.getAccfirmerno(),txnsLog.getAccsecmerno(),txnsLog.getAccmemberid(),txnsLog.getBusicode(),txnsLog.getAmount()+"","1","");
-			
-			// 退款账务处理
-			TradeInfo tradeInfo = new TradeInfo();
-			tradeInfo.setPayMemberId(refundBean.getMemberId());
-			tradeInfo.setPayToMemberId(refundBean.getMerId());
-			tradeInfo.setAmount(new BigDecimal(refundBean.getTxnAmt()));
-			tradeInfo.setCharge(new BigDecimal(txnsLogService
-					.getTxnFee(txnsLog)));
-			tradeInfo.setTxnseqno(txnsLog.getTxnseqno());
-			tradeInfo.setCoopInstCode(txnsLog.getAccfirmerno());
-			tradeInfo.setBusiCode(txnsLog.getBusicode());
-			log.info(JSON.toJSONString(tradeInfo));
-			
-			
-			// 记录分录流水
-			accEntryService.accEntryProcess(tradeInfo, EntryEvent.AUDIT_APPLY);
-			
-			saveOrderInfo(orderinfo);
-			tn = orderinfo.getTn();
-		} catch (NumberFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T020");
-		}catch (AccBussinessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T000", "账务异常:"+e.getMessage());
-		} catch (AbstractBusiAcctException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T000", "账务异常:"+e.getMessage());
-		} catch (IllegalEntryRequestException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T000", "账务异常:"+e.getMessage());
-		} catch (TradeException e) {
-			orderinfo.setStatus("03");
-			saveOrderInfo(orderinfo);
-			return null;
-			
+		
+		/**
+		 * 判断原交易业务类型
+		 * 1.资金类交易
+		 * 2.产品类交易
+		 * 3.行业专户交易
+		 */
+		BusinessEnum businessEnum = BusinessEnum.fromValue(old_txnsLog.getBusicode());
+		RefundOrderBean refundOrderBean = new RefundOrderBean();
+		refundOrderBean.setCoopInstiId(refundBean.getCoopInstiId());
+		refundOrderBean.setBackUrl(refundBean.getBackUrl());
+		refundOrderBean.setFrontUrl("");
+		refundOrderBean.setTxnType(refundBean.getTxnType());
+		refundOrderBean.setTxnSubType(refundBean.getTxnSubType());
+		refundOrderBean.setBizType(refundBean.getBizType());
+		refundOrderBean.setMemberId(refundBean.getMemberId());
+		refundOrderBean.setCurrencyCode("156");
+		refundOrderBean.setOrderDesc(refundBean.getOrderDesc());
+		refundOrderBean.setCustomerIp("127.0.0.0");
+		refundOrderBean.setOrderId(refundBean.getOrderId());
+		refundOrderBean.setTxnTime(DateUtil.getCurrentDateTime());
+		refundOrderBean.setOrderTimeout("99999");
+		refundOrderBean.setTxnAmt(refundBean.getTxnAmt());
+		refundOrderBean.setOrigOrderId(refundBean.getOrigOrderId());
+		refundOrderBean.setMerId(refundBean.getMerId());
+		if(businessEnum==BusinessEnum.CONSUMEACCOUNT||businessEnum==BusinessEnum.CONSUMEQUICK){//资金类交易
+			return refundService.commonRefund(refundOrderBean);
+		}else if(businessEnum==BusinessEnum.CONSUMEACCOUNT_PRODUCT||businessEnum==BusinessEnum.CONSUMEQUICK_PRODUCT){//产品类交易
+			return refundService.productRefund(refundOrderBean);
+		}else if(businessEnum==BusinessEnum.CONSUME_INDUSTRY){//行业专户交易
+			return refundService.industryRefund(refundOrderBean);
 		}
-
-		try {
-			// 无异常时保存退款交易流水表，以便于以后退款审核操作
-			TxnsRefundModel refundOrder = new TxnsRefundModel(refundBean,
-					old_txnsLog.getTxnseqno(), old_txnsLog.getAmount() + "",
-					txnsLog.getTxnseqno());
-			refundOrder.setRelorderno(refundBean.getOrderId());
-			txnsRefundService.saveRefundOrder(refundOrder);
-			return tn;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new TradeException("T022");
-		}
-
+		
+		return null;
+		
+		
 	}
 
 	@Transactional(propagation=Propagation.REQUIRED,rollbackFor=Throwable.class)

@@ -187,8 +187,6 @@ public class AccountPayServiceImpl implements IAccountPayService{
     
     public String encryptPWD(String merchId,String pwd) throws TradeException{
         try {
-        	
-        	
             //平台公钥加密
         	CoopInstiMK merchMk	= coopInstiService.getCoopInstiMK(merchId, TerminalAccessType.INVPORTAL);
             //MerchMK merchMk = merchMKService.get(merchId);
