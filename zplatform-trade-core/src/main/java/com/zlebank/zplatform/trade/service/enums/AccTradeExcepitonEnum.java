@@ -24,6 +24,8 @@ public enum AccTradeExcepitonEnum {
 	
 	AQ00("AQ00","字段校验非法"),
 	AQ01("AQ01","查询余额失败"),
+	AQ02("AQ02","账户用途不存在"),
+	
 	TE00("TE00","非法字段"),
 	TE01("TE01","订单会员信息有误"),
 	TE02("TE02","不存在此交易"),

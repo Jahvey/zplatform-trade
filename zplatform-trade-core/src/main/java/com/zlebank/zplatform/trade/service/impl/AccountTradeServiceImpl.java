@@ -1,11 +1,8 @@
 package com.zlebank.zplatform.trade.service.impl;
 
 import java.math.BigDecimal;
-import java.nio.channels.Channel;
 import java.util.List;
 import java.util.Map;
-
-import net.sf.json.JSONObject;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -16,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.acc.bean.BusiAcctQuery;
 import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
-import com.zlebank.zplatform.acc.bean.enums.BusiType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.acc.service.AccountQueryService;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
@@ -49,24 +45,23 @@ import com.zlebank.zplatform.trade.bean.gateway.QueryAccResultBean;
 import com.zlebank.zplatform.trade.bean.gateway.TransferOrderBean;
 import com.zlebank.zplatform.trade.dao.ITxnsOrderinfoDAO;
 import com.zlebank.zplatform.trade.exception.CommonException;
-import com.zlebank.zplatform.trade.exception.CommonException;
 import com.zlebank.zplatform.trade.exception.TradeException;
 import com.zlebank.zplatform.trade.factory.AccountingAdapterFactory;
 import com.zlebank.zplatform.trade.model.TxncodeDefModel;
 import com.zlebank.zplatform.trade.model.TxnsLogModel;
 import com.zlebank.zplatform.trade.model.TxnsOrderinfoModel;
 import com.zlebank.zplatform.trade.service.IAccoutTradeService;
-import com.zlebank.zplatform.trade.service.IGateWayService;
 import com.zlebank.zplatform.trade.service.ITxncodeDefService;
 import com.zlebank.zplatform.trade.service.ITxnsLogService;
 import com.zlebank.zplatform.trade.service.TradeNotifyService;
 import com.zlebank.zplatform.trade.service.base.BaseServiceImpl;
 import com.zlebank.zplatform.trade.service.enums.AccTradeExcepitonEnum;
-import com.zlebank.zplatform.trade.service.enums.AccTradeExcepitonEnum;
 import com.zlebank.zplatform.trade.utils.ConsUtil;
 import com.zlebank.zplatform.trade.utils.OrderNumber;
 import com.zlebank.zplatform.trade.utils.UUIDUtil;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
+
+import net.sf.json.JSONObject;
 
 @Service("accountTradeService")
 public class AccountTradeServiceImpl extends
@@ -76,8 +71,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	private ITxncodeDefService txncodeDefService;
 	@Autowired
 	private MerchService merchService;
-	@Autowired
-	private IGateWayService gateWayService;
 	@Autowired
 	private CoopInstiService coopInstiService;
 	@Autowired
@@ -109,6 +102,9 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
     		return result;
     	}
     	Usage usage=Usage.fromValue(query.getAccoutType());
+    	if(usage==null || usage.equals(Usage.UNKNOW)){
+    		throw  new CommonException(AccTradeExcepitonEnum.AQ02.getErrorCode());
+    	}
     	MemberBean queryBean = new MemberBean();
     	queryBean.setMemberId(query.getMemberId());
     	try {
