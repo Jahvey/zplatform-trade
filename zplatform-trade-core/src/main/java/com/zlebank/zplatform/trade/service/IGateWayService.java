@@ -350,4 +350,11 @@ public interface IGateWayService extends IBaseService<TxnsOrderinfoModel, Long>{
      * @throws TradeException
      */
     public Map<String, Object> withdraw(TradeBean tradeBean) throws AccBussinessException, IllegalEntryRequestException, AbstractBusiAcctException, NumberFormatException, TradeException;
+    
+    /**
+     * 订单数据校验
+     * @param order
+     * @return
+     */
+    public ResultBean validateOrder(OrderBean order);
 }

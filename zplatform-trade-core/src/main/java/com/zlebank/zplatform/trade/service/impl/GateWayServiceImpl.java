@@ -3152,4 +3152,27 @@ public class GateWayServiceImpl extends
         model.put("url", "/fastpay/success");
     	return model;
     }
+
+	/**
+	 *
+	 * @param order
+	 * @return
+	 */
+	@Override
+	public ResultBean validateOrder(OrderBean order) {
+		 ResultBean resultBean = GateWayTradeAnalyzer.validateOrder(order);
+        if (!resultBean.isResultBool()) {
+            // 订单信息长度和非空验证未通过
+            
+            return resultBean;
+        }
+	    // 检验风控信息是否符合要求
+        ResultBean riskResultBean = GateWayTradeAnalyzer.generateRiskBean(order
+                .getRiskRateInfo());
+        if (!riskResultBean.isResultBool()) {// 验证风控信息的正确性
+           
+            return resultBean;
+        }
+		return riskResultBean;
+	}
 }
