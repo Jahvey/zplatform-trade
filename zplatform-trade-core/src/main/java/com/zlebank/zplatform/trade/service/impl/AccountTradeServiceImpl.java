@@ -18,6 +18,7 @@ import com.zlebank.zplatform.acc.service.AccountQueryService;
 import com.zlebank.zplatform.commons.dao.pojo.AccStatusEnum;
 import com.zlebank.zplatform.commons.dao.pojo.BusiTypeEnum;
 import com.zlebank.zplatform.commons.utils.DateUtil;
+import com.zlebank.zplatform.commons.utils.Md5;
 import com.zlebank.zplatform.commons.utils.StringUtil;
 import com.zlebank.zplatform.member.bean.EnterpriseBean;
 import com.zlebank.zplatform.member.bean.MemberAccountBean;
@@ -120,6 +121,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		}
 		return result;
 	}
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String transfer(TransferOrderBean order) throws CommonException {
@@ -164,6 +166,15 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		if(fromMember == null){
 			throw new CommonException(AccTradeExcepitonEnum.TE04.getErrorCode());//付款方不存在
 		}
+		//校验支付密码
+		String payPwd =fromMember.getPayPwd();
+		if(StringUtil.isEmpty(payPwd)){
+			throw new CommonException(AccTradeExcepitonEnum.PAYPWD_EMPTY.getErrorCode());
+		}
+		String requestPayPwd = Md5.getInstance().md5s(order.getPayPassword());
+        if (! requestPayPwd.equals(payPwd)) {
+        	throw new CommonException(AccTradeExcepitonEnum.PAYPWD_ERROR.getErrorCode());
+        }
 		PojoMember toMember =this.getMemberInfo(order.getToMerId());
 		if(toMember ==null){
 			throw new CommonException(AccTradeExcepitonEnum.TE05.getErrorCode());//收款方不存在
@@ -186,9 +197,8 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//获取付款人的信息
 		//如果是企业会员
-		MemberType type= fromMember.getMemberType();
-		if(type.equals(MemberType.ENTERPRISE)){
-			PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -198,6 +208,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
+			//throw new CommonException(AccTradeExcepitonEnum.BW08.getErrorCode());//此业务只允许是企业会员
 			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
 			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 13));
@@ -296,13 +307,14 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		log.info("转账账务处理结束"+txnsLog.getTxnseqno());
 		 /**账务处理结束 **/
 		/**异步通知处理开始  **/
-		if(StringUtil.isNotEmpty(orderinfo.getBackurl()) && fromMember.getMemberType().equals(MemberType.ENTERPRISE) ){
+		if(StringUtil.isNotEmpty(orderinfo.getBackurl())  ){
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
 		return orderinfo.getTn();
 	}
 	
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String bailAccountRecharge(BailRechargeOrderBean order) throws CommonException {
@@ -365,10 +377,8 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		/*******保存订单的日志*******/
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//获取付款人的信息
-		//如果是企业会员
-		MemberType type= fromMember.getMemberType();
-		if(type.equals(MemberType.ENTERPRISE)){
-			PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -378,7 +388,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 					.valueOf(member.getSetlCycle().toString())));
 		//如果是普通会员
 		}else{
-			//throw new CommonException(AccTradeExcepitonEnum.BC08.getErrorCode());//只有企业会员才有保证金账户
+			//throw new CommonException(AccTradeExcepitonEnum.BW08.getErrorCode());//此业务只允许是企业会员
 			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
 			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 13));
@@ -391,7 +401,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 			txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 20));
 		}
-		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
 		txnsLog.setTxndate(DateUtil.getCurrentDate());
 		txnsLog.setTxntime(DateUtil.getCurrentTime());
@@ -489,7 +498,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		log.info("保证金充值账务处理结束"+txnsLog.getTxnseqno());
 		/***********异步通知**********************/
 		/**异步通知处理开始  **/
-		if(type.equals(MemberType.ENTERPRISE)&&StringUtil.isNotEmpty(orderinfo.getBackurl())){
+		if(StringUtil.isNotEmpty(orderinfo.getBackurl())){
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/
@@ -516,6 +525,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 	}
 	
 
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String bailAccountWithdraw(BailWithdrawOrderBean order) throws CommonException {
@@ -560,6 +570,15 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		if(fromMember == null){
 			throw new CommonException(AccTradeExcepitonEnum.BW04.getErrorCode());//付款方不存在
 		}
+		//校验支付密码
+		String payPwd =fromMember.getPayPwd();
+		if(StringUtil.isEmpty(payPwd)){
+			throw new CommonException(AccTradeExcepitonEnum.PAYPWD_EMPTY.getErrorCode());
+		}
+		String requestPayPwd = Md5.getInstance().md5s(order.getPayPassword());
+        if (! requestPayPwd.equals(payPwd)) {
+        	throw new CommonException(AccTradeExcepitonEnum.PAYPWD_ERROR.getErrorCode());
+        }
 		//检查基本账户
 		String basicAcc = this.checkMemberAccInfo(order.getFromMerId(), null);
 		if(StringUtil.isNotEmpty(basicAcc)){
@@ -580,9 +599,8 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//获取付款人的信息
 		//如果是企业会员
-		MemberType type= fromMember.getMemberType();
-		if(type.equals(MemberType.ENTERPRISE)){
-			PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		PojoMerchDeta member = merchService.getMerchBymemberId(order.getFromMerId());
+		if(member!=null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -691,7 +709,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements IAccoutTradeService {
 		log.info("保证金提取账务处理结束"+txnsLog.getTxnseqno());
 		/***********异步通知**********************/
 		/**异步通知处理开始  **/
-		if(type.equals(MemberType.ENTERPRISE) && StringUtil.isNotEmpty(orderinfo.getBackurl())){
+		if( StringUtil.isNotEmpty(orderinfo.getBackurl())){
 			 tradeNotifyService.notifyExt(txnsLog.getTxnseqno());
 		}
         /**异步通知处理结束 **/

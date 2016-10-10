@@ -62,6 +62,8 @@ public enum AccTradeExcepitonEnum {
 	
 	
 	CURRENCY("CURRENCY","未找到此币钟"),
+	PAYPWD_EMPTY("PAYPWD_EMPTY","请先设支付密码"),
+	PAYPWD_ERROR("PAYPWD_ERROR","支付密码错识"),
 	GW03("GW03","获取商户版本信息错误");
 	;
 

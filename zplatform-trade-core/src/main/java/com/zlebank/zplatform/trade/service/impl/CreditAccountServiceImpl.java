@@ -67,7 +67,7 @@ import com.zlebank.zplatform.trade.utils.UUIDUtil;
 import com.zlebank.zplatform.trade.utils.ValidateLocator;
 
 import net.sf.json.JSONObject;
-@Service
+@Service("creditAccountServiceImpl")
 public class CreditAccountServiceImpl extends
 BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 
@@ -95,6 +95,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
     private IndustryGroupMemberService industryGroupMemberService;
     @Autowired
 	private ITxnsRefundService txnsRefundService;
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String creditAccountRecharge(CreditRechargeOrderBean order)
@@ -178,17 +179,30 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		TxnsLogModel txnsLog = new TxnsLogModel();
 		//合作机构没有版本信息
 		// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
-		txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
-				busiModel.getBusicode(), 13));
-		txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
-				busiModel.getBusicode(), 12));
-		txnsLog.setFeever(getDefaultVerInfo(order.getCoopInstiId(),
-				busiModel.getBusicode(), 11));
-		txnsLog.setPrdtver(getDefaultVerInfo(order.getCoopInstiId(),
-				busiModel.getBusicode(), 10));
-		txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
-				busiModel.getBusicode(), 20));
-		
+		PojoMerchDeta member = null ;
+		if(StringUtil.isNotEmpty(order.getMerId())){
+			member = merchService.getMerchBymemberId(order.getMerId());
+		}
+		if(member != null){
+			txnsLog.setRiskver(member.getRiskVer());
+			txnsLog.setSplitver(member.getSpiltVer());
+			txnsLog.setFeever(member.getFeeVer());
+			txnsLog.setPrdtver(member.getPrdtVer());
+			txnsLog.setRoutver(member.getRoutVer());
+			txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
+					.valueOf(member.getSetlCycle().toString())));
+		}else{
+			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 13));
+			txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 12));
+			txnsLog.setFeever(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 11));
+			txnsLog.setPrdtver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 10));
+			txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
+					busiModel.getBusicode(), 20));
+		}
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
 		txnsLog.setTxndate(DateUtil.getCurrentDate());
 		txnsLog.setTxntime(DateUtil.getCurrentTime());
@@ -201,6 +215,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		txnsLog.setAmount(Long.valueOf(order.getTxnAmt()));
 		txnsLog.setAccordno(order.getOrderId());
 		txnsLog.setAccfirmerno(order.getCoopInstiId());
+		txnsLog.setAccsecmerno(order.getMerId());
 		txnsLog.setAcccoopinstino(coopInstCode);
 		//付款方
 		//txnsLog.setAccsecmerno(order.getFromMerId());
@@ -226,7 +241,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		orderinfo.setFirmembername(coopInstiService.getInstiByInstiCode(
 				order.getCoopInstiId()).getInstiName());
 		//二级商户
-		//orderinfo.setSecmemberno(order.getFromMerId());
+		orderinfo.setSecmemberno(order.getMerId());
 		//orderinfo.setSecmembername(inst.getInstiName());
 		orderinfo.setFronturl(order.getFrontUrl());
 		orderinfo.setBackurl(order.getBackUrl());
@@ -280,6 +295,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 	}
 	
 	
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String creditAccountConsume(CreditConsumeOrderBean order)
@@ -368,8 +384,11 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		 /*******保存订单的日志*******/
 		 String coopInstCode= ConsUtil.getInstance().cons.getZlebank_coopinsti_code();
 		TxnsLogModel txnsLog = new TxnsLogModel();
-		if(StringUtil.isEmpty(order.getMerId())){
-			PojoMerchDeta member = merchService.getMerchBymemberId(order.getMerId());
+		PojoMerchDeta member = null ;
+		if(StringUtil.isNotEmpty(order.getMerId())){
+			member = merchService.getMerchBymemberId(order.getMerId());
+		}
+		if(member != null){
 			txnsLog.setRiskver(member.getRiskVer());
 			txnsLog.setSplitver(member.getSpiltVer());
 			txnsLog.setFeever(member.getFeeVer());
@@ -378,8 +397,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 			txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
 					.valueOf(member.getSetlCycle().toString())));
 		}else{
-			//合作机构没有版本信息
-			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
 			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 13));
 			txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
@@ -391,7 +408,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 			txnsLog.setRoutver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 20));
 		}
-		
 		txnsLog.setAccsettledate(DateUtil.getSettleDate(1));
 		txnsLog.setTxndate(DateUtil.getCurrentDate());
 		txnsLog.setTxntime(DateUtil.getCurrentTime());
@@ -481,6 +497,7 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		return orderinfo.getTn();
 	}
 	
+	@SuppressWarnings("null")
 	@Override
 	@Transactional
 	public String creditAccountRefund(CreditRefundOrderBean order)
@@ -572,8 +589,11 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 		 /*******保存订单的日志*******/
 		 String coopInstCode= ConsUtil.getInstance().cons.getZlebank_coopinsti_code();
 		TxnsLogModel txnsLog = new TxnsLogModel();
-		if(StringUtil.isEmpty(order.getMerId())){
-			PojoMerchDeta merInfo = merchService.getMerchBymemberId(order.getMerId());
+		PojoMerchDeta merInfo = null ;
+		if(StringUtil.isNotEmpty(order.getMerId())){
+			merInfo = merchService.getMerchBymemberId(order.getMerId());
+		}
+		if(merInfo != null){
 			txnsLog.setRiskver(merInfo.getRiskVer());
 			txnsLog.setSplitver(merInfo.getSpiltVer());
 			txnsLog.setFeever(merInfo.getFeeVer());
@@ -582,8 +602,6 @@ BaseServiceImpl<TxnsOrderinfoModel, Long>implements ICreditAccoutService {
 			txnsLog.setAccsettledate(DateUtil.getSettleDate(Integer
 					.valueOf(merInfo.getSetlCycle().toString())));
 		}else{
-			//合作机构没有版本信息
-			// 10-产品版本,11-扣率版本,12-分润版本,13-风控版本,20-路由版本
 			txnsLog.setRiskver(getDefaultVerInfo(order.getCoopInstiId(),
 					busiModel.getBusicode(), 13));
 			txnsLog.setSplitver(getDefaultVerInfo(order.getCoopInstiId(),
