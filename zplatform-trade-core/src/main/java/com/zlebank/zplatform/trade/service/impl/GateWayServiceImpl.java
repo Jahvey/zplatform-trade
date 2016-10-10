@@ -1055,8 +1055,7 @@ public class GateWayServiceImpl extends
 			}
 		}
 
-		TxnsOrderinfoModel old_orderInfo = getOrderinfoByOrderNoAndMerch(
-				refundBean.getOrigOrderId(), refundBean.getMerId());
+		TxnsOrderinfoModel old_orderInfo = txnsOrderinfoDAO.getOrderByTN(refundBean.getOrigOrderId());
 		if (old_orderInfo == null) {
 			throw new TradeException("GW15");
 		}
