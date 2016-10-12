@@ -2609,18 +2609,18 @@ public class GateWayServiceImpl extends
 	public ResultBean bindingBankCard(String memberId, String personMemberId,
 			WapCardBean cardBean) {
 			ResultBean resultBean = null;
-			TxnsOrderinfoModel orderinfo =null;
-			TxnsLogModel txnsLog = null;
+			//TxnsOrderinfoModel orderinfo =null;
+			//TxnsLogModel txnsLog = null;
 			String amount="0";
-			if(cardBean.getTn()!=null){
+			/*if(cardBean.getTn()!=null){
 				orderinfo = getOrderinfoByTN(cardBean.getTn());
 				txnsLog = txnsLogService.get(orderinfo.getRelatetradetxn());
 				amount=orderinfo.getOrderamt()+"";
 			}else{
 				return new ResultBean("TOO0","交易流水tn不能为空");
-			}
+			}*/
 			// 获取路由信息
-			ResultBean routResultBean = routeConfigService.getWapTransRout(
+			/*ResultBean routResultBean = routeConfigService.getWapTransRout(
 					DateUtil.getCurrentDateTime(),
 					amount, 
 					StringUtil.isNotEmpty(orderinfo.getSecmemberno()) ? orderinfo.getSecmemberno():orderinfo.getFirmemberno(),
@@ -2629,7 +2629,8 @@ public class GateWayServiceImpl extends
 			if (log.isDebugEnabled()) {
 				log.debug("获取路由信息：" + JSON.toJSON(cardBean));
 			}
-			String routId = routResultBean.getResultObj().toString();
+			String routId = routResultBean.getResultObj().toString();*/
+			String routId = ChannelEnmu.CMBCWITHHOLDING.getChnlcode();
 			if (routId == null) {
 				return new ResultBean("T001","获取路由失败");
 			}
@@ -2645,8 +2646,8 @@ public class GateWayServiceImpl extends
 			TradeBean trade = new TradeBean("", "", amount, cardBean.getCardNo(),
 					cardBean.getCustomerNm(), cardBean.getCertifId(),
 					cardBean.getPhoneNo(), "", "", cardBean.getCertifTp(), "",
-					txnsLog.getAccmemberid(), "", txnsLog.getAccsecmerno(), "", "", txnsLog.getAccsecmerno(), "", "",
-				    txnsLog.getBusicode(),
+					personMemberId, "", memberId, "", "", memberId, "", "","",
+				    //txnsLog.getBusicode(),
 					cardBean.getCardType(), "", "", cardBean.getCvn2(),
 					cardBean.getExpired());
 			trade.setTn(cardBean.getTn());
