@@ -38,9 +38,7 @@ public class OrderBean implements Serializable{
     private String frontUrl="";
     @Length(max=256,message="param.error.backUrl")
     private String backUrl="";
-    @NotEmpty(message="param.empty.signature")
     private String signature="";
-    @NotEmpty(message="param.empty.signMethod")
     @Length(max=2,message="param.error.signMethod")
     private String signMethod="";
     @NotEmpty(message="param.empty.coopInstiId")
@@ -64,10 +62,8 @@ public class OrderBean implements Serializable{
     @NotEmpty(message="param.empty.bizType")
     @Length(max=6,message="param.error.bizType")
     private String bizType="";
-    
     @Length(max=2,message="param.error.channelType")
     private String channelType="";
-    @NotEmpty(message="param.empty.accessType")
     @Length(max=1,message="param.error.accessType")
     private String accessType="";
     @NotEmpty(message="param.empty.txnTime")
@@ -85,17 +81,14 @@ public class OrderBean implements Serializable{
     private String currencyCode="";
     @Length(max=2048,message="param.error.customerInfo")
     private String customerInfo="";
-    @NotEmpty(message="param.empty.orderTimeout")
-    @Length(max=10,message="param.error.orderTimeout")
+    @Length(max=14,message="param.error.orderTimeout")
     private String orderTimeout="";
-    @NotEmpty(message="param.empty.payTimeout")
     @Length(max=14,message="param.error.payTimeout")
     private String payTimeout="";
     @Length(max=2048,message="param.error.reqReserved")
     private String reqReserved="";
     @Length(max=2048,message="param.error.reserved")
     private String reserved="";
-    @NotEmpty(message="param.empty.riskRateInfo")
     @Length(max=2048,message="param.error.riskRateInfo")
     private String riskRateInfo="";
     @Length(max=128,message="param.error.encryptCertId")

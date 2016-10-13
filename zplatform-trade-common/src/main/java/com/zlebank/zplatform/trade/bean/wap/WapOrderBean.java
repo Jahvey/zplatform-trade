@@ -38,19 +38,19 @@ public class WapOrderBean implements Serializable {
     @Length(max=2,message="param.error")
     private String encoding;
     /** 签名*/
-    @NotEmpty(message="param.empty")
+    
     @Length(max=1024,message="param.error")
     private String signature;
     /**签名方法*/
-    @NotEmpty(message="param.empty")
+    
     @Length(max=2,message="param.error")
     private String signMethod;
     /** 前台通知地址*/
-    @NotEmpty(message="param.empty")
+  
     @Length(max=256,message="param.error")
     private String frontUrl;
     /**后台通知地址 */
-    @NotEmpty(message="param.empty")
+   
     @Length(max=256,message="param.error")
     private String backUrl;
     
@@ -88,7 +88,7 @@ public class WapOrderBean implements Serializable {
     /** 渠道类型*/
     private String channelType="";
     /** 接入类型*/
-    @NotEmpty(message="param.empty")
+   
     @Length(max=1,message="param.error")
     private String accessType="";
     /** 商户订单号*/
@@ -118,7 +118,6 @@ public class WapOrderBean implements Serializable {
     @Length(max=2048,message="param.error")
     private String reserved;
     /** 风险信息域*/
-    @NotEmpty(message="param.empty")
     @Length(max=2048,message="param.error")
     private String riskRateInfo;
     /** 订单描述*/

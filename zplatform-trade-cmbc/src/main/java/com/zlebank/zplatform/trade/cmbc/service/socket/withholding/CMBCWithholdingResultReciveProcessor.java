@@ -213,7 +213,7 @@ public class CMBCWithholdingResultReciveProcessor implements ReceiveProcessor{
     public CMBCWithholdingResultReciveProcessor() {
         txnsWithholdingService=(ITxnsWithholdingService) SpringContext.getContext().getBean("txnsWithholdingService");
         tradeReceiveProcessor=  (ITradeReceiveProcessor) SpringContext.getContext().getBean("cmbcQuickReceiveProcessor");
-        txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfo");
+        txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfoDAO");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
         rspmsgDAO = (RspmsgDAO) SpringContext.getContext().getBean("rspmsgDAO");
         cmbcCrossLineQuickPayService = (CMBCCrossLineQuickPayService) SpringContext.getContext().getBean("cmbcCrossLineQuickPayService");

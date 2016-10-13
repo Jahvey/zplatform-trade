@@ -317,7 +317,7 @@ public class CMBCWithholdingReciveProcessor implements ReceiveProcessor{
         cmbcTransferService = (ICMBCTransferService) SpringContext.getContext().getBean("cmbcTransferService");
         txnsWhiteListService = (ITxnsWhiteListService) SpringContext.getContext().getBean("txnsWhiteListService");
         tradeReceiveProcessor=  (ITradeReceiveProcessor) SpringContext.getContext().getBean("cmbcQuickReceiveProcessor");
-        txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfo");
+        txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext().getBean("txnsOrderinfoDAO");
         txnsLogService = (ITxnsLogService) SpringContext.getContext().getBean("txnsLogService");
         rspmsgDAO = (RspmsgDAO) SpringContext.getContext().getBean("rspmsgDAO");
     }

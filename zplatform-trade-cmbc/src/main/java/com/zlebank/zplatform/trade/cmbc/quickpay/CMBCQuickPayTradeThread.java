@@ -46,7 +46,7 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 	private TradeBean tradeBean;
 	private TradeTypeEnum tradeType;
 
-	private ITxnsQuickpayService txnsQuickpayService;
+	/*private ITxnsQuickpayService txnsQuickpayService;
 
 	private ICMBCQuickPayService cmbcQuickPayService;
 	private ProvinceDAO provinceDAO;
@@ -54,13 +54,13 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 	private ICMBCTransferService cmbcTransferService;
 	private ITxnsOrderinfoDAO txnsOrderinfoDAO;
 	private IQuickpayCustService quickpayCustService;
-	private ISMSService smsService;
-	
+	private ISMSService smsService;*/
+	private ITxnsQuickpayService txnsQuickpayService = (ITxnsQuickpayService) SpringContext.getContext().getBean("txnsQuickpayService");
 	private CMBCCrossLineQuickPayService cmbcCrossLineQuickPayService = (CMBCCrossLineQuickPayService) SpringContext.getContext().getBean("cmbcCrossLineQuickPayService"); 
 	
 
 	public CMBCQuickPayTradeThread() {
-		txnsQuickpayService = (ITxnsQuickpayService) SpringContext.getContext()
+		/*txnsQuickpayService = (ITxnsQuickpayService) SpringContext.getContext()
 				.getBean("txnsQuickpayService");
 		provinceDAO = (ProvinceDAO) SpringContext.getContext().getBean(
 				"provinceDAO");
@@ -72,11 +72,11 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 		cmbcTransferService = (ICMBCTransferService) SpringContext.getContext()
 				.getBean("cmbcTransferService");
 		txnsOrderinfoDAO = (ITxnsOrderinfoDAO) SpringContext.getContext()
-				.getBean("txnsOrderinfo");
+				.getBean("txnsOrderinfoDAO");
 		quickpayCustService = (IQuickpayCustService) SpringContext.getContext()
 				.getBean("quickpayCustService");
 		smsService = (ISMSService) SpringContext.getContext().getBean(
-				"smsService");
+				"smsService");*/
 	}
 
 	@Override
@@ -232,7 +232,7 @@ public class CMBCQuickPayTradeThread implements IQuickPayTrade {
 			log.debug(JSON.toJSONString(trade));
 		}
 		trade.setPayinstiId(PAYINSTID);
-		if(!"0".equals(trade.getSmsFlag())){
+		if("0".equals(trade.getSmsFlag())){
 			sendSms(trade);
 		}
 		resultBean = new ResultBean("success");
