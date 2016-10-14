@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.zlebank.zplatform.acc.bean.TradeInfo;
 import com.zlebank.zplatform.acc.bean.enums.AcctStatusType;
+import com.zlebank.zplatform.acc.bean.enums.TradeType;
 import com.zlebank.zplatform.acc.bean.enums.Usage;
 import com.zlebank.zplatform.acc.exception.AbstractBusiAcctException;
 import com.zlebank.zplatform.acc.exception.AccBussinessException;
@@ -520,10 +521,11 @@ public class RefundServiceImpl implements RefundService{
 					.getTxnFee(txnsLog)));
 			tradeInfo.setTxnseqno(txnsLog.getTxnseqno());
 			tradeInfo.setCoopInstCode(txnsLog.getAccfirmerno());
-			tradeInfo.setBusiCode(txnsLog.getBusicode());
+			tradeInfo.setBusiCode(TradeType.PRODUCT_CAPITAL_REFUND.getCode());
 			tradeInfo.setProductId(txnsLog.getProductcode());
 			tradeInfo.setAccess_coopInstCode(txnsLog.getAccfirmerno());
 			tradeInfo.setCoopInstCode(ConsUtil.getInstance().cons.getZlebank_coopinsti_code());
+			tradeInfo.setProductId(old_txnsLog.getProductcode());
 			// 记录分录流水
 			accEntryService.accEntryProcess(tradeInfo, EntryEvent.AUDIT_APPLY);
 			txnsOrderinfoDAO.saveOrderInfo(orderinfo);

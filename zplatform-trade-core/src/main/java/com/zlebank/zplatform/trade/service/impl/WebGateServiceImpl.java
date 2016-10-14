@@ -233,6 +233,7 @@ public class WebGateServiceImpl extends BaseServiceImpl<TxnsOrderinfoModel, Long
         updateOrderToStartPay(orderinfo.getRelatetradetxn());
         quickPayTrade.setTradeType(TradeTypeEnum.SUBMITPAY);
         quickPayTrade.setTradeBean(tradeBean);
+        System.out.println(JSON.toJSONString(tradeBean));
         if(ConsUtil.getInstance().cons.getIs_junit()==1){
         	quickPayTrade.submitPay(tradeBean);
         }else{
@@ -320,6 +321,7 @@ public class WebGateServiceImpl extends BaseServiceImpl<TxnsOrderinfoModel, Long
             //trade.setBindCardId(Id+"");
             trade.setCardId(Id);
             trade.setReaPayOrderNo(OrderNumber.getInstance().generateReaPayOrderId());
+            trade.setSmsFlag("0");
             trade.setMerUserId(txnsLog.getAccmemberid());
             quickPayTrade.setTradeType(TradeTypeEnum.BANKSIGN);
             quickPayTrade.setTradeBean(trade);
